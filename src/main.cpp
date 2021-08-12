@@ -15,8 +15,8 @@
 
 #include "Server.hpp"
 
-#define PORT1 1002
-#define PORT2 1003
+#define PORT1 2002
+#define PORT2 2003
 
 //clang++ main.cpp -o ft
 
@@ -31,7 +31,7 @@ int main (int argc, char *argv[])
     server->addPort(port_sock);
     server->addPort(port_sock2);
     
-    ServerBlock ser1("192.168.24.34", "./www/server1");
+    ServerBlock ser1("localhost", "./www/server1");
     ServerBlock ser2("am-c4.msk.21-school.ru", "./www/server2");
     ServerBlock ser3("127.0.0.1", "./www/server3");
     port_sock->addServerBlock(ser1);

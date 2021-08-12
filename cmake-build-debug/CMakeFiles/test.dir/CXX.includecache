@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.cpp
+Parser.h
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.h
+
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.h
+vector
+-
+fstream
+-
+sstream
+-
+ServerBlock.hpp
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/ServerBlock.hpp
+
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/ServerBlock.hpp
+iostream
+-
+map
+-
+
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/test.cpp
+Parser.h
+/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.h
+
