@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Client.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Client.hpp
 fcntl.h
 -
 sys/socket.h
@@ -20,37 +20,39 @@ sstream
 vector
 -
 Port.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Port.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Port.hpp
 File.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/File.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/File.hpp
 Server.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Server.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Server.hpp
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Exception.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Exception.hpp
 iostream
 -
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/File.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/File.hpp
 Server.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Server.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Server.hpp
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Port.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Port.hpp
 fcntl.h
 -
 sys/socket.h
 -
 unistd.h
 -
+cstring
+-
 iostream
 -
 vector
 -
 Exception.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Exception.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Exception.hpp
 ServerBlock.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/ServerBlock.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.hpp
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Server.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Server.hpp
 sys/select.h
 -
 iostream
@@ -58,15 +60,17 @@ iostream
 vector
 -
 Client.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Client.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Client.hpp
 Port.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Port.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Port.hpp
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/ServerBlock.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.hpp
 iostream
 -
+map
+-
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/main.cpp
+/home/msnazarow/CLionProjects/webserv-parser/src/main.cpp
 fcntl.h
 -
 netdb.h
@@ -94,5 +98,5 @@ sstream
 vector
 -
 Server.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Server.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Server.hpp
 

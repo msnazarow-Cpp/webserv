@@ -8,10 +8,12 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.cpp" "/Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles/test.dir/src/Parser.cpp.o"
-  "/Users/sgertrud/CLionProjects/C-socket-server-group-/src/test.cpp" "/Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles/test.dir/src/test.cpp.o"
+  "/home/msnazarow/CLionProjects/webserv-parser/src/Location.cpp" "/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/test.dir/src/Location.cpp.o"
+  "/home/msnazarow/CLionProjects/webserv-parser/src/Parser.cpp" "/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/test.dir/src/Parser.cpp.o"
+  "/home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.cpp" "/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/test.dir/src/ServerBlock.cpp.o"
+  "/home/msnazarow/CLionProjects/webserv-parser/src/test.cpp" "/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/test.dir/src/test.cpp.o"
   )
-set(CMAKE_CXX_COMPILER_ID "AppleClang")
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH

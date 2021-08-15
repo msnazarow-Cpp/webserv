@@ -44,19 +44,19 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake
+CMAKE_COMMAND = /snap/clion/162/bin/cmake/linux/bin/cmake
 
 # The command to remove a file.
-RM = /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -E rm -f
+RM = /snap/clion/162/bin/cmake/linux/bin/cmake -E rm -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/sgertrud/CLionProjects/C-socket-server-group-
+CMAKE_SOURCE_DIR = /home/msnazarow/CLionProjects/webserv-parser
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug
+CMAKE_BINARY_DIR = /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug
 
 # Include any dependencies generated for this target.
 include CMakeFiles/test.dir/depend.make
@@ -68,43 +68,73 @@ include CMakeFiles/test.dir/flags.make
 
 CMakeFiles/test.dir/src/Parser.cpp.o: CMakeFiles/test.dir/flags.make
 CMakeFiles/test.dir/src/Parser.cpp.o: ../src/Parser.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/test.dir/src/Parser.cpp.o"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test.dir/src/Parser.cpp.o -c /Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/test.dir/src/Parser.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test.dir/src/Parser.cpp.o -c /home/msnazarow/CLionProjects/webserv-parser/src/Parser.cpp
 
 CMakeFiles/test.dir/src/Parser.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/test.dir/src/Parser.cpp.i"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.cpp > CMakeFiles/test.dir/src/Parser.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/msnazarow/CLionProjects/webserv-parser/src/Parser.cpp > CMakeFiles/test.dir/src/Parser.cpp.i
 
 CMakeFiles/test.dir/src/Parser.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test.dir/src/Parser.cpp.s"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.cpp -o CMakeFiles/test.dir/src/Parser.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/msnazarow/CLionProjects/webserv-parser/src/Parser.cpp -o CMakeFiles/test.dir/src/Parser.cpp.s
 
 CMakeFiles/test.dir/src/test.cpp.o: CMakeFiles/test.dir/flags.make
 CMakeFiles/test.dir/src/test.cpp.o: ../src/test.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/test.dir/src/test.cpp.o"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test.dir/src/test.cpp.o -c /Users/sgertrud/CLionProjects/C-socket-server-group-/src/test.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/test.dir/src/test.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test.dir/src/test.cpp.o -c /home/msnazarow/CLionProjects/webserv-parser/src/test.cpp
 
 CMakeFiles/test.dir/src/test.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/test.dir/src/test.cpp.i"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/sgertrud/CLionProjects/C-socket-server-group-/src/test.cpp > CMakeFiles/test.dir/src/test.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/msnazarow/CLionProjects/webserv-parser/src/test.cpp > CMakeFiles/test.dir/src/test.cpp.i
 
 CMakeFiles/test.dir/src/test.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test.dir/src/test.cpp.s"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sgertrud/CLionProjects/C-socket-server-group-/src/test.cpp -o CMakeFiles/test.dir/src/test.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/msnazarow/CLionProjects/webserv-parser/src/test.cpp -o CMakeFiles/test.dir/src/test.cpp.s
+
+CMakeFiles/test.dir/src/ServerBlock.cpp.o: CMakeFiles/test.dir/flags.make
+CMakeFiles/test.dir/src/ServerBlock.cpp.o: ../src/ServerBlock.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/test.dir/src/ServerBlock.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test.dir/src/ServerBlock.cpp.o -c /home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.cpp
+
+CMakeFiles/test.dir/src/ServerBlock.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/test.dir/src/ServerBlock.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.cpp > CMakeFiles/test.dir/src/ServerBlock.cpp.i
+
+CMakeFiles/test.dir/src/ServerBlock.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test.dir/src/ServerBlock.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.cpp -o CMakeFiles/test.dir/src/ServerBlock.cpp.s
+
+CMakeFiles/test.dir/src/Location.cpp.o: CMakeFiles/test.dir/flags.make
+CMakeFiles/test.dir/src/Location.cpp.o: ../src/Location.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/test.dir/src/Location.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/test.dir/src/Location.cpp.o -c /home/msnazarow/CLionProjects/webserv-parser/src/Location.cpp
+
+CMakeFiles/test.dir/src/Location.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/test.dir/src/Location.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/msnazarow/CLionProjects/webserv-parser/src/Location.cpp > CMakeFiles/test.dir/src/Location.cpp.i
+
+CMakeFiles/test.dir/src/Location.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/test.dir/src/Location.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/msnazarow/CLionProjects/webserv-parser/src/Location.cpp -o CMakeFiles/test.dir/src/Location.cpp.s
 
 # Object files for target test
 test_OBJECTS = \
 "CMakeFiles/test.dir/src/Parser.cpp.o" \
-"CMakeFiles/test.dir/src/test.cpp.o"
+"CMakeFiles/test.dir/src/test.cpp.o" \
+"CMakeFiles/test.dir/src/ServerBlock.cpp.o" \
+"CMakeFiles/test.dir/src/Location.cpp.o"
 
 # External object files for target test
 test_EXTERNAL_OBJECTS =
 
 test: CMakeFiles/test.dir/src/Parser.cpp.o
 test: CMakeFiles/test.dir/src/test.cpp.o
+test: CMakeFiles/test.dir/src/ServerBlock.cpp.o
+test: CMakeFiles/test.dir/src/Location.cpp.o
 test: CMakeFiles/test.dir/build.make
 test: CMakeFiles/test.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable test"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/test.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -116,6 +146,6 @@ CMakeFiles/test.dir/clean:
 .PHONY : CMakeFiles/test.dir/clean
 
 CMakeFiles/test.dir/depend:
-	cd /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /Users/sgertrud/CLionProjects/C-socket-server-group- /Users/sgertrud/CLionProjects/C-socket-server-group- /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles/test.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/msnazarow/CLionProjects/webserv-parser /home/msnazarow/CLionProjects/webserv-parser /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/test.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/test.dir/depend
 

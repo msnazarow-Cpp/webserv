@@ -48,19 +48,19 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake
+CMAKE_COMMAND = /snap/clion/162/bin/cmake/linux/bin/cmake
 
 # The command to remove a file.
-RM = /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -E rm -f
+RM = /snap/clion/162/bin/cmake/linux/bin/cmake -E rm -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /Users/sgertrud/CLionProjects/C-socket-server-group-
+CMAKE_SOURCE_DIR = /home/msnazarow/CLionProjects/webserv-parser
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug
+CMAKE_BINARY_DIR = /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -68,7 +68,7 @@ CMAKE_BINARY_DIR = /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-bu
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/snap/clion/162/bin/cmake/linux/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -78,7 +78,7 @@ rebuild_cache/fast: rebuild_cache
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
-	/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+	/snap/clion/162/bin/cmake/linux/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -87,9 +87,9 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -142,6 +142,33 @@ C_socket_server_group_/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/build
 .PHONY : C_socket_server_group_/fast
 
+src/Location.o: src/Location.cpp.o
+.PHONY : src/Location.o
+
+# target to build an object file
+src/Location.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/Location.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/Location.cpp.o
+.PHONY : src/Location.cpp.o
+
+src/Location.i: src/Location.cpp.i
+.PHONY : src/Location.i
+
+# target to preprocess a source file
+src/Location.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/Location.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/Location.cpp.i
+.PHONY : src/Location.cpp.i
+
+src/Location.s: src/Location.cpp.s
+.PHONY : src/Location.s
+
+# target to generate assembly for a file
+src/Location.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/Location.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/Location.cpp.s
+.PHONY : src/Location.cpp.s
+
 src/Parser.o: src/Parser.cpp.o
 .PHONY : src/Parser.o
 
@@ -168,6 +195,33 @@ src/Parser.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/Parser.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/Parser.cpp.s
 .PHONY : src/Parser.cpp.s
+
+src/ServerBlock.o: src/ServerBlock.cpp.o
+.PHONY : src/ServerBlock.o
+
+# target to build an object file
+src/ServerBlock.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ServerBlock.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/ServerBlock.cpp.o
+.PHONY : src/ServerBlock.cpp.o
+
+src/ServerBlock.i: src/ServerBlock.cpp.i
+.PHONY : src/ServerBlock.i
+
+# target to preprocess a source file
+src/ServerBlock.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ServerBlock.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/ServerBlock.cpp.i
+.PHONY : src/ServerBlock.cpp.i
+
+src/ServerBlock.s: src/ServerBlock.cpp.s
+.PHONY : src/ServerBlock.s
+
+# target to generate assembly for a file
+src/ServerBlock.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test.dir/build.make CMakeFiles/test.dir/src/ServerBlock.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/C_socket_server_group_.dir/build.make CMakeFiles/C_socket_server_group_.dir/src/ServerBlock.cpp.s
+.PHONY : src/ServerBlock.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
@@ -227,9 +281,15 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... C_socket_server_group_"
 	@echo "... test"
+	@echo "... src/Location.o"
+	@echo "... src/Location.i"
+	@echo "... src/Location.s"
 	@echo "... src/Parser.o"
 	@echo "... src/Parser.i"
 	@echo "... src/Parser.s"
+	@echo "... src/ServerBlock.o"
+	@echo "... src/ServerBlock.i"
+	@echo "... src/ServerBlock.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

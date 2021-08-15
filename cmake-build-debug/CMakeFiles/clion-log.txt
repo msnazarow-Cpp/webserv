@@ -1,4 +1,4 @@
-/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /Users/sgertrud/CLionProjects/C-socket-server-group-
+/snap/clion/162/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/msnazarow/CLionProjects/webserv-parser
 -- Configuring done
 -- Generating done
--- Build files have been written to: /Users/sgertrud/CLionProjects/C-socket-server-group-/cmake-build-debug
+-- Build files have been written to: /home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug

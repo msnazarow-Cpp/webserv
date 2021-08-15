@@ -6,27 +6,43 @@
 
 #IncludeRegexTransform: 
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.cpp
-Parser.h
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.h
+/home/msnazarow/CLionProjects/webserv-parser/src/Location.hpp
+vector
+-
+string
+-
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.h
+/home/msnazarow/CLionProjects/webserv-parser/src/Parser.hpp
 vector
 -
 fstream
 -
 sstream
 -
+cstdlib
+-
+cstring
+-
 ServerBlock.hpp
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/ServerBlock.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.hpp
+Location.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Location.hpp
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/ServerBlock.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/ServerBlock.hpp
 iostream
 -
 map
 -
+Location.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Location.hpp
+vector
+-
+set
+-
 
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/test.cpp
-Parser.h
-/Users/sgertrud/CLionProjects/C-socket-server-group-/src/Parser.h
+/home/msnazarow/CLionProjects/webserv-parser/src/test.cpp
+Parser.hpp
+/home/msnazarow/CLionProjects/webserv-parser/src/Parser.hpp
+tr1/regex
+-
 
