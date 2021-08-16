@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+//#include <functional>
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
@@ -14,52 +15,60 @@
 #include <vector>
 
 #include "Server.hpp"
+#include "ServerBlock.hpp"
 
-#define PORT1 2002
-#define PORT2 2003
-
-//clang++ main.cpp -o ft
-
+//clang++ main.cpp -std=c++11 ServerBlock.cpp Location.cpp Parser.cpp -o ft
 
 int main (int argc, char *argv[])
 {
+    char *arg;
+    if (!arg)
+    {
+        struct stat info;
+        arg = "./default.conf";
+        if(!(!stat(arg, &info) && !S_ISDIR(info.st_mode)))
+        {
+            std::cout << "Please, provide config-file as argument or place 'default.conf' near executable.\n";
+            return (-1);
+        }
+    }
+    else
+       arg = argv[1];
+    
     Server *server = new Server();
-    
-    
-    Port *port_sock = new Port(PORT1);
-    Port *port_sock2 = new Port(PORT2);
-    server->addPort(port_sock);
-    server->addPort(port_sock2);
-    
-    ServerBlock ser1("localhost", "./www/server1");
-    ServerBlock ser2("am-c4.msk.21-school.ru", "./www/server2");
-    ServerBlock ser3("127.0.0.1", "./www/server3");
-    port_sock->addServerBlock(ser1);
-    port_sock->addServerBlock(ser2);
-    port_sock->addServerBlock(ser3);
-    port_sock2->addServerBlock(ser2);
-    
+    Parser *parser;
+    try {
+        parser = new Parser(arg, server);
+        server->setParser(parser);
+    } catch (Exception &e) {
+        std::cout << e.what() << "Exception during config parsing. Server stopped.\n";
+        return (-1);
+    }
 
     while (1)
     {
-        std::cout << "Server waiting...\n";
+        //std::cout << "Server waiting...\n";
         server->refillSets();
         int ret = server->selector();
-        std::cout << "RET = " << ret << "\n";
-        if (ret <= 0)
+        //std::cout << "RET = " << ret << "\n";
+        if (ret < 0)
         {
             std::cout << ret << ": Select error, skip cycle\n";
+            server->cleaner();
+            //usleep(100000);
             continue ;
         }
-        std::cout << "\nCHECK PORTS\n";
+        if (!ret)
+            continue ;
+        //std::cout << "\nCHECK PORTS\n";
         server->handleConnections();
-        std::cout << "\nCHECK CLIENTS\n";
+        //std::cout << "\nCHECK CLIENTS\n";
         server->readRequests();
         //std::cout << "\nCHECK REMOVALS\n";
-        //server->remove();
-        std::cout << "\nCHECK ANSWERS\n";
+        server->remove();
+        //std::cout << "\nCHECK ANSWERS\n";
         server->sendAnswer();
-        std::cout << "\nCHECK REMOVALS\n";
+        //std::cout << "\nCHECK REMOVALS\n";
         server->remove();
         
     }

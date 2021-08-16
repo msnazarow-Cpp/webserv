@@ -1,11 +1,15 @@
 #ifndef SERVERBLOCK_HPP
 #define SERVERBLOCK_HPP
+#include <sys/stat.h>
 #include <iostream>
 #include <map>
 #include "Location.hpp"
 #include <vector>
 #include <set>
+#include "Exception.hpp"
 
+
+class Server;
 enum Status{
     clean,
     waitForServer,
@@ -24,6 +28,11 @@ class ServerBlock
 public:
     ServerBlock():status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(){}
     friend class Parser;
+    friend class Port;
+    bool createDirs();
+    void fillPorts(Server *server);
+    std::string getRoot();
+    std::string getBuffer();
 
 private:
 
@@ -42,8 +51,11 @@ private:
     friend bool operator >(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator >=(const ServerBlock& lhs, const ServerBlock& rhs);
     friend std::ostream& operator<<(std::ostream &os, const ServerBlock& d);
+    std::string bufferDir;
+    std::string uploadDir;
 };
 
 std::ostream& operator<<(std::ostream &os, const ServerBlock& d);
 
+#include "Server.hpp"
 #endif

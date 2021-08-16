@@ -3,7 +3,9 @@
 
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <unistd.h>
+
 #include <cstring>
 #include <iostream>
 #include <vector>
@@ -14,11 +16,12 @@
 class Port{
 private:
     std::vector<int *> clients;
-    std::map<std::string, ServerBlock *> servers;
+    std::map<std::string, ServerBlock> servers;
     int descriptor;
+    int port;
     
 public:
-    Port(int port)
+    Port(int port): port(port)
     {
         descriptor = socket(AF_INET, SOCK_STREAM, 0);
         if (descriptor < 0)
@@ -44,14 +47,23 @@ public:
         return (descriptor);
     }
     
-    void addServerBlock(ServerBlock &block)
+    void addServerBlock(ServerBlock block)
     {
-        servers.insert(std::pair<std::string, ServerBlock *>(block.getHost(), &block));
+        for (std::set<std::string>::iterator it = block.server_name.begin(); it != block.server_name.end(); it++)
+        {
+            servers.insert(std::pair<std::string, ServerBlock>(*it, block));
+            //std::cout << "Block " << *it << " has been added to map. Pars: " << block << "$$$\n";
+        }
     }
     
-    std::map<std::string, ServerBlock *> &getMap()
+    std::map<std::string, ServerBlock> &getMap()
     {
         return (servers);
+    }
+    
+    int getPort()
+    {
+        return (port);
     }
 };
 

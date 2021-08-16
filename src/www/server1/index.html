@@ -5,10 +5,27 @@
 	</head>
 	<body>
 		<center><img src="logo.jpeg"></center>
-		<h1>Best service for uploading your photos for nothing</h1>
-		<form action="/upload" enctype="multipart/form-data" method="post">
-			<p>files: <input type="file" id="myFile" name="filename" size="1"></p>
+		<h1>Best service for uploading your files for nothing</h1>
+		<form action="/fileupload.php?filename" enctype="multipart/form-data" method="post">
+			<p>files: <input type="file" id="myFile" name="userfile" size="1"></p>
   			<input type="submit">
 		</form>
+		<div class="container">
+            <div class="table-responsive">
+                <h1>Files Uploaded</h1>
+                <br />
+                    <table class="table table-bordered table-striped" id="stats">
+                        <tr>
+                            <th>Filename</th>
+                            <th>Status</th>
+                        </tr>
+                    </table>
+            </div>
+        </div>
+		<ul>
+            <?php for($i=1;$i<=5;$i++){ ?>
+                <li>Menu Item <?php echo $i; ?></li>
+            <?php } ?>
+        </ul>
 	</body>
 </html>

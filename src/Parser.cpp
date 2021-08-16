@@ -7,7 +7,7 @@
 #include "Extention.hpp"
 #include <sys/stat.h>
 
-Parser::Parser(char *confFileName) {
+Parser::Parser(char *confFileName, Server *server): server(server) {
     std::fstream file(confFileName);
     std::stringstream lines;
     std::string str;
@@ -40,7 +40,13 @@ Parser::Parser(char *confFileName) {
         else if (str == "}"){
             if (tmp.status == waitForServerParams){
                 tmp.status = clean;
-                blocks.push_back(tmp);
+                if (tmp.createDirs())
+                {
+                    blocks.push_back(tmp);
+                    blocks[blocks.size() - 1].fillPorts(server);
+                }
+                else
+                    std::cout << "Block " << tmp << "has been excluded from set because of error\n";
                 tmp = ServerBlock();
             } else if (tmp.status == waitForLocationParams){
                 tmp.status = waitForServerParams;
@@ -199,12 +205,14 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
         if (!blocks[i].server_name.count(server_name) || !blocks[i].listen.count(port))
             continue;
         ServerBlock block = blocks[i];
+        //std::cout << "CHECK: \n" << block << "\nEND\n";
         if (!block.locations.empty()){
             for (int j = 0; j < block.locations.size(); ++j) {
                 Location loc = block.locations[j];
                 if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
                 hasEnding(request, loc.location[1]))){
                     out = loc.root + request;
+                    //std::cout << "OUT: " << out << "\n";
                     if (stat(out.c_str(), &statbuf))
                         return "404";
                     if (S_ISDIR(statbuf.st_mode))

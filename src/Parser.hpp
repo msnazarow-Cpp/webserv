@@ -10,18 +10,21 @@
 #include <sstream>
 #include <cstdlib>
 #include <cstring>
-#include "ServerBlock.hpp"
 #include "Location.hpp"
 
+class Server;
+class ServerBlock;
 class Parser {
 private:
     std::vector<ServerBlock> blocks;
+    Server *server;
 public:
     class ParserNotValidException:std::exception{};
-    Parser(char *confFileName);
+    Parser(char *confFileName, Server *server);
     std::string getfilename(std::string server_name, int port, std::string request);
 };
 
 
-
+#include "Server.hpp"
+#include "ServerBlock.hpp"
 #endif //C_SOCKET_SERVER_GROUP__PARSER_HPP
