@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/C_socket_server_group_.dir/src/main.cpp.o CMakeFiles/C_socket_server_group_.dir/src/Parser.cpp.o CMakeFiles/C_socket_server_group_.dir/src/ServerBlock.cpp.o CMakeFiles/C_socket_server_group_.dir/src/Location.cpp.o -o C_socket_server_group_ 

@@ -17,10 +17,11 @@ class ServerBlock;
 class Parser {
 private:
     std::vector<ServerBlock> blocks;
-    Server *server;
+    // Server *server;
 public:
     class ParserNotValidException:std::exception{};
     Parser(char *confFileName, Server *server);
+    bool check_block(ServerBlock & block);
     std::string getfilename(std::string server_name, int port, std::string request);
 };
 

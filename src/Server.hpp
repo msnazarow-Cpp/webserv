@@ -21,7 +21,7 @@ private:
     std::vector<Port *> allports;
     struct timeval timeout;
     char buf[BUFFERSIZE];
-    Parser *parser;
+    Parser *_parser;
     
 public:
     Server()
@@ -84,14 +84,14 @@ public:
         int last_sock = -1;
         int descr;
         
-        for (int i = 0; i < allfiles.size(); i++)
+        for (size_t i = 0; i < allfiles.size(); i++)
         {
             descr = allfiles[i]->getDescriptor();
             if (descr > last_sock)
                 last_sock = descr;
         }
         
-        for (int i = 0; i < allclients.size(); i++)
+        for (size_t i = 0; i < allclients.size(); i++)
         {
             descr = allclients[i]->getDescriptor();
             if (descr > last_sock)
@@ -104,7 +104,7 @@ public:
             }
         }
         
-        for (int i = 0; i < allports.size(); i++)
+        for (size_t i = 0; i < allports.size(); i++)
         {
             descr = allports[i]->getDescriptor();
             if (descr > last_sock)
@@ -233,7 +233,7 @@ public:
     
     void readRequests()
     {
-        int ret;
+        ssize_t ret;
         int descr;
         Client *curclient;
         for (size_t i = 0; i < clientsCount(); i++)
@@ -248,15 +248,15 @@ public:
                 //std::cout << descr << ": Ret = " << ret << "\n";
                 if (ret > 0)
                 {
-                    for (int i = 0; i < ret; i++)
+                    for (ssize_t k = 0; k < ret; k++)
                     {
-                        curclient->fillBuffer(buf[i]);
-                        buf[i] = 0;
+                        curclient->fillBuffer(buf[k]);
+                        buf[k] = 0;
                     }
                     //std::cout << "Buffer:\n" << readbufs[*it].str() << "\nEnd buffer\n";
                     if (curclient->is_full())
                     {
-                        curclient->handleRequest(parser);
+                        curclient->handleRequest(_parser);
                         if (curclient->getStatus() == 3)
                             addFile(curclient->getFile());
                     }
@@ -274,11 +274,11 @@ public:
                 //std::cout << ": Ret = " << ret << "\n";
                 if (ret > 0)
                 {
-                    for (int i = 0; i < ret; i++)
+                    for (ssize_t k = 0; k < ret; k++)
                     {
-                        curclient->fillContent(buf[i]);
+                        curclient->fillContent(buf[k]);
                         //std::cout << "#" << buf[i] << "#";
-                        buf[i] = 0;
+                        buf[k] = 0;
                     }
                 }
                 if (ret < 0)
@@ -301,9 +301,9 @@ public:
     
     void sendAnswer()
     {
-        int ret;
+        // int ret;
         int descr;
-        int len;
+        // int len;
         Client *curclient;
         FileUpload *file;
         for (size_t i = 0; i < filesCount(); i++)
@@ -353,7 +353,7 @@ public:
     
     Port *hasPort(int val)
     {
-        for (int i=0; i < allports.size(); i++)
+        for (size_t i=0; i < allports.size(); i++)
         {
             if (allports[i]->getPort() == val)
                 return (allports[i]);
@@ -363,7 +363,7 @@ public:
     
     void setParser(Parser *parser)
     {
-        this->parser = parser;
+        this->_parser = parser;
     }
 };
 

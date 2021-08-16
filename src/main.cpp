@@ -21,12 +21,11 @@
 
 int main (int argc, char *argv[])
 {
-    char *arg;
-    if (!arg)
+    char *arg = NULL; //TODO Что тут происходит - непонятно ?
+    if (argc == 1)
     {
         struct stat info;
-        arg = "./default.conf";
-        if(!(!stat(arg, &info) && !S_ISDIR(info.st_mode)))
+        if(!(!stat("./default.conf", &info) && !S_ISDIR(info.st_mode)))
         {
             std::cout << "Please, provide config-file as argument or place 'default.conf' near executable.\n";
             return (-1);

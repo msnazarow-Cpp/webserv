@@ -171,6 +171,8 @@ public:
             pos = 4;
         else if (requestType == 2)
             pos = 5;
+        else 
+            pos = -1; // TODO: pos не инициализируется
         //std::cout << "METHOD: #" << envs["REQUEST_METHOD"] << "#\n";
         
         
@@ -415,8 +417,10 @@ public:
             status = -1;
             return ;
         }
-        char *const args[3] = {"./cgi/php-cgi", "./www/server1/fileupload.php", NULL};
-        
+        std::vector<std::string> args_cpp;
+        args_cpp.push_back("./cgi/php-cgi");
+        args_cpp.push_back("./www/server1/fileupload.php");
+        const char * args[3] = {args_cpp[0].c_str(), args_cpp[1].c_str(), NULL};
         int result = 0;
         pipefd[0] = descriptor;
         pipe(pipefd);
@@ -437,7 +441,7 @@ public:
             dup2(pipefd[1], 2);
             close(pipefd[0]);
             dup2(enter, 0);
-            exit(execve("./cgi/php-cgi", args, cgiEnvCreate()));
+            exit(execve("./cgi/php-cgi", (char* const *)args, cgiEnvCreate()));
         }
         else
         {

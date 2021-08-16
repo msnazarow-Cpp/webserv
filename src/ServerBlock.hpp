@@ -21,7 +21,9 @@ enum Status{
     waitForLocationIndex,
     waitForLocationRoot,
     waitForLocation,
-    waitForLocationParams
+    waitForLocationParams,
+    waitForMethod,
+    waitForAutoIndex
 };
 class ServerBlock
 {
@@ -44,6 +46,8 @@ private:
     std::vector<Location> locations;
     size_t client_max_body_size;
     std::vector<std::string>index;
+    std::string bufferDir;
+    std::string uploadDir;
     friend bool operator ==(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator !=(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator <(const ServerBlock& lhs, const ServerBlock& rhs);
@@ -51,8 +55,6 @@ private:
     friend bool operator >(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator >=(const ServerBlock& lhs, const ServerBlock& rhs);
     friend std::ostream& operator<<(std::ostream &os, const ServerBlock& d);
-    std::string bufferDir;
-    std::string uploadDir;
 };
 
 std::ostream& operator<<(std::ostream &os, const ServerBlock& d);

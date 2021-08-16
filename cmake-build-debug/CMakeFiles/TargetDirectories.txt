@@ -1,4 +1,0 @@
-/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/test.dir
-/home/msnazarow/CLionProjects/webserv-parser/cmake-build-debug/CMakeFiles/C_socket_server_group_.dir

@@ -4,12 +4,13 @@
 
 class FileUpload{
 private:
-    int descriptor;
+    char const *filepath;
     int size;
+    std::string content;
     int pos;
     int status;
-    char const *filepath;
-    std::string content;
+    int descriptor;   
+    
 
 public:
     FileUpload(char const *filepath, int size, std::string const &content): filepath(filepath), size(size), content(content), pos(0), status(0)

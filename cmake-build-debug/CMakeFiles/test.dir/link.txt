@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/test.dir/src/Parser.cpp.o CMakeFiles/test.dir/src/test.cpp.o CMakeFiles/test.dir/src/ServerBlock.cpp.o CMakeFiles/test.dir/src/Location.cpp.o -o test 
