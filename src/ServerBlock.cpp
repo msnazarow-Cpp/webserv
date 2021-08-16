@@ -40,7 +40,7 @@ bool ServerBlock::createDirs()
     mkdir(tmp, 0777);
     struct stat info;
 
-    if(!(!stat(tmp, &info) && info.st_mode & S_IFDIR))
+    if(!(!stat(tmp, &info) && info.st_mode & S_IFDIR)) //TODO что именно тут происходит?
         return (false);
     
     uploadDir = root + "/uploads";

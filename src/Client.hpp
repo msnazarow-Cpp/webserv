@@ -410,7 +410,7 @@ public:
     void cgiResponseSimple()
     {
         //file->resetDescriptor();
-        int enter = open(".enter", O_RDONLY);
+        int enter = open(".enter", O_RDWR | O_CREAT, S_IRWXG | S_IRWXU | S_IRWXO);
         if (enter < 0)
         {
             std::cout << "ENTER FILE ERROR\n";

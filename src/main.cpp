@@ -27,7 +27,7 @@ int main (int argc, char *argv[])
         struct stat info;
         if(!(!stat("./default.conf", &info) && !S_ISDIR(info.st_mode)))
         {
-            std::cout << "Please, provide config-file as argument or place 'default.conf' near executable.\n";
+            std::cout << "Please, provide config-file as argument or place 'default.conf' near executable." << std::endl;
             return (-1);
         }
     }
@@ -40,7 +40,7 @@ int main (int argc, char *argv[])
         parser = new Parser(arg, server);
         server->setParser(parser);
     } catch (Exception &e) {
-        std::cout << e.what() << "Exception during config parsing. Server stopped.\n";
+        std::cout << e.what() << std::endl << "Exception during config parsing. Server stopped." << std::endl;
         return (-1);
     }
 
