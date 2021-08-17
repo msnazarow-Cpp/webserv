@@ -5,6 +5,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+
+
 //#include <functional>
 #include <algorithm>
 #include <cstdlib>
@@ -18,6 +20,9 @@
 #include "ServerBlock.hpp"
 
 //clang++ main.cpp -std=c++11 ServerBlock.cpp Location.cpp Parser.cpp -o ft
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
 
 int main (int argc, char *argv[])
 {
@@ -72,3 +77,5 @@ int main (int argc, char *argv[])
         
     }
 }
+
+#pragma clang diagnostic pop

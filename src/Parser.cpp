@@ -119,7 +119,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForServerParams;
-                        str.pop_back();
+                        str.erase(str.end() - 1);
                     }
                     char *check;
                     size_t ret = strtol(str.c_str(), &check, 10);
@@ -171,7 +171,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForServerParams;
-                        str.pop_back();
+                        str.erase(str.end() - 1);
                     } 
                     tmp.index.push_back(str);
                     break;
@@ -180,7 +180,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForLocationParams;
-                        str.pop_back();
+                        str.erase(str.end() - 1);
                     }
                     loc.index.push_back(str);
                     break;
@@ -189,7 +189,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForLocationParams;
-                        str.pop_back();
+                        str.erase(str.end() - 1);
                     }
                     if (str == "GET")
                         loc.methods.insert(GET);
@@ -206,7 +206,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForLocationParams;
-                        str.pop_back();
+                        str.erase(str.end() - 1);
                     }
                     if ( str == "on" ){
                         loc.autoindex = true;
@@ -230,6 +230,8 @@ Parser::Parser(char *confFileName, Server *server) {
             }
         }
     }
+    if (blocks.empty())
+        throw  ParserNotValidException();
 }
 bool unorderIsPrefix( std::string const& lhs, std::string const& rhs )
 {

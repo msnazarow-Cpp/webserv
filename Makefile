@@ -3,7 +3,7 @@
 export CXX CPPFLAGS MAKEFLAGS LDFLAGS INCLUDES BONUS WITH_BONUS make
 make 		= make
 CXX 		= clang++ -std=c++98 -O2
-CPPFLAGS 		= -c -MMD -Wall -Wextra -Werror -Wno-unused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+CPPFLAGS 		= -c -MMD -Wall -Wextra -Werror -Wno-unused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -Wno-unknown-pragmas
 BFLAGS		= '-D BONUS=1'
 LDFLAGS 	= -MMD -Wall -Wextra -Werror -Wno-unused-result
 DFLAGS 		= '-O0 -g3'

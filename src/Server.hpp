@@ -4,6 +4,7 @@
 #include <sys/select.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include "Client.hpp"
 #include "Port.hpp"
@@ -182,7 +183,7 @@ public:
     {
         for (size_t i = toeraseF.size(); i > 0; i--)
         {
-            std::vector<FileUpload *>::iterator it = std::find(allfiles.begin(), allfiles.end(), toeraseF.back());
+            std::vector<FileUpload *>::iterator it = std::find(allfiles.begin(), allfiles.end(), toeraseF.back()); //TODO Что вообще тут происходит?
             //std::cout << "File " << (*it)->getDescriptor() << " DELETED\n";
             delete (*it);
             allfiles.erase(it);
