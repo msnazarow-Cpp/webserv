@@ -21,6 +21,7 @@ struct Location{
     std::string fastcgi_pass;
     std::string fastcgi_params;
     std::set<Method> methods;
+    std::string cgi_pass;
     friend std::ostream& operator<<(std::ostream &os, const Location& d);
     Location(): location(), root(), index(), autoindex(false), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(){}
 };

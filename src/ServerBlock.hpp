@@ -23,12 +23,13 @@ enum Status{
     waitForLocation,
     waitForLocationParams,
     waitForMethod,
-    waitForAutoIndex
+    waitForAutoIndex,
+    waitForCgi
 };
 class ServerBlock
 {
 public:
-    ServerBlock():status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(){}
+    ServerBlock();
     friend class Parser;
     friend class Port;
     bool createDirs();

@@ -1,10 +1,13 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#ifndef __APPLE__
+#include <wait.h>
+#endif
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <wait.h>
+
 
 #include <cstdio>
 #include <iostream>
@@ -482,7 +485,7 @@ public:
             content = "<h1>404 Not Found</h1>";
         }
         //std::string contentStr = content.str();
-        //std::cout << "CONTENT: " << content << "\n";
+        std::cout << "CONTENT: " << content << "\n";
         response << requestProtocol << " " << code << " OK\r\n";
         response << "Cache-Control: no-cache, private\r\n";
         response << "Content-Type: text/html\r\n";

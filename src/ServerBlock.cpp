@@ -40,14 +40,14 @@ bool ServerBlock::createDirs()
     mkdir(tmp, 0777);
     struct stat info;
 
-    if(!(!stat(tmp, &info) && info.st_mode & S_IFDIR)) //TODO что именно тут происходит?
+    if(!(!stat(tmp, &info) && (info.st_mode & S_IFDIR))) //TODO что именно тут происходит?
         return (false);
     
     uploadDir = root + "/uploads";
     const char *tmp2 = uploadDir.c_str();
     mkdir(tmp2, 0777);
 
-    if(!(!stat(tmp2, &info) && info.st_mode & S_IFDIR))
+    if(!(!stat(tmp2, &info) && (info.st_mode & S_IFDIR)))
         return (false);
     return (true);
 }
@@ -76,4 +76,8 @@ std::string ServerBlock::getRoot()
 std::string ServerBlock::getBuffer()
 {
     return (bufferDir);
+}
+
+ServerBlock::ServerBlock()
+        :status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(){
 }

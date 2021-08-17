@@ -6,7 +6,9 @@
 #include "Parser.hpp"
 #include "Extention.hpp"
 #include <sys/stat.h>
-
+#ifndef IP
+    #define IP localhost
+#endif
 bool Parser::check_block(ServerBlock &block) {
     if (!block.locations.empty()){
         for (size_t i = 0; i < block.locations.size(); ++i) {
@@ -76,6 +78,8 @@ Parser::Parser(char *confFileName, Server *server) {
                         check_block(tmp);
                         if (tmp.createDirs())
                         {
+                            if (tmp.server_name.empty())
+                                tmp.server_name.insert(IP);
                             blocks.push_back(tmp);
                             blocks[blocks.size() - 1].fillPorts(server);
                         }
@@ -110,6 +114,8 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForMethod;
                     } else if (str == "autoindex"){
                         tmp.status = waitForAutoIndex;
+                    } else if (str == "cgi_pass") {
+                        tmp.status = waitForCgi;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -217,6 +223,14 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     break;
                 }
+                case waitForCgi: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForLocationParams;
+                        str.erase(str.end() - 1);
+                    }
+                    loc.cgi_pass = str;
+                }
             }
             if (str == ";")
             {
@@ -237,8 +251,8 @@ bool unorderIsPrefix( std::string const& lhs, std::string const& rhs )
 {
     return std::equal(
             lhs.begin(),
-            lhs.begin() + std::min( lhs.size(), rhs.size() ),
-            rhs.begin() );
+            lhs.begin() + rhs.size(),
+            rhs.begin());
 }
 
 bool hasEnding (std::string const &fullString, std::string const &ending) {
@@ -258,24 +272,8 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
         if (!blocks[i].server_name.count(server_name) || !blocks[i].listen.count(port))
             continue;
         ServerBlock block = blocks[i];
-        if (!block.locations.empty()){
-            for (size_t j = 0; j < block.locations.size(); ++j) {
-                Location loc = block.locations[j];
-                if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
-                hasEnding(request, loc.location[1]))){
-                    out = loc.root + request;
-                    if (stat(out.c_str(), &statbuf))
-                        return "404";
-                    if (S_ISDIR(statbuf.st_mode))
-                        for (size_t k = 0; k < loc.index.size(); ++k) {
-                            if((out = getfilename(server_name, port, loc.location[0] + loc.index[k])) != "404"){
-                                return (out);
-                            }
-                        }
-                    return (out);
-                }
-            }
-            Location loc = block.locations[0];
+        for (size_t j = 0; j < block.locations.size(); ++j) {
+            Location loc = block.locations[j];
             if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
             hasEnding(request, loc.location[1]))){
                 out = loc.root + request;
@@ -283,28 +281,26 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     return "404";
                 if (S_ISDIR(statbuf.st_mode))
                     for (size_t k = 0; k < loc.index.size(); ++k) {
-                        if((out = getfilename(server_name, port, loc.index[k])) != "404"){
+                        if((out = getfilename(server_name, port, request + loc.index[k])) != "404"){
                             return (out);
                         }
                     }
                 return (out);
             }
-        } else {
-            out = block.root + request;
-            if (stat(out.c_str(), &statbuf))
-                return "404";
-            if (S_ISDIR(statbuf.st_mode))
-            {
-                for (size_t k = 0; k < block.index.size(); ++k) {
-                    if((out = getfilename(server_name, port, block.index[k])) != "404"){
-                        return (out);
-                    }
-                }
-                return ("403");
-            }
-            return (out);
         }
+        out = block.root + request;
+        if (stat(out.c_str(), &statbuf))
+            return "404";
+        if (S_ISDIR(statbuf.st_mode))
+        {
+            for (size_t k = 0; k < block.index.size(); ++k) {
+                if((out = getfilename(server_name, port, request + block.index[k])) != "404"){
+                    return (out);
+                }
+            }
+            return ("403");
+        }
+        return (out);
     }
-
     return ("404");
 }

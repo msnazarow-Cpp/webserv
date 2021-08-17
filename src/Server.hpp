@@ -1,6 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
-#define BUFFERSIZE 1024*1024 //TODO был слишком медленный
+#define BUFFERSIZE 1024*1024*10 //TODO был слишком медленный
 #include <sys/select.h>
 #include <iostream>
 #include <vector>

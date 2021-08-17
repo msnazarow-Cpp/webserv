@@ -3,12 +3,13 @@
 export CXX CPPFLAGS MAKEFLAGS LDFLAGS INCLUDES BONUS WITH_BONUS make
 make 		= make
 CXX 		= clang++ -std=c++98 -O2
-CPPFLAGS 		= -c -MMD -Wall -Wextra -Werror -Wno-unused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -Wno-unknown-pragmas
+IP = $(shell ifconfig | grep 192 | cut -d' ' -f2)
+CPPFLAGS 	= -c -MMD -Wall -Wextra -Werror -Wno-unused-result -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -Wno-unknown-pragmas -D IP=\"$(IP)\"
 BFLAGS		= '-D BONUS=1'
 LDFLAGS 	= -MMD -Wall -Wextra -Werror -Wno-unused-result
 DFLAGS 		= '-O0 -g3'
 ASFLAGS 	= -fsanitize=address
-ifeq ($(CC), gcc)
+ifeq ($(CXX), g++)
 HFLAGS		= '-pedantic -Wshadow -Wformat=2 -Wfloat-equal\
 	-Wlogical-op -Wshift-overflow=2 -Wduplicated-cond -Wcast-qual -Wcast-align\
 	-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_FORTIFY_SOURCE=2\
@@ -32,6 +33,9 @@ UNAME 		= $(shell uname)
 ifeq ($(UNAME), Linux)
 	CFLAGS += -D LINUX=1
 endif
+
+test:
+
 
 bonus:
 	make make='make bonus' CPPFLAGS+=$(BFLAGS) LDFLAGS+=$(BFLAGS) all
