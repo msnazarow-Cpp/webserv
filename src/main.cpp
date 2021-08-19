@@ -55,12 +55,11 @@ int main (int argc, char *argv[])
 
     while (1)
     {
-        std::cout << "Server waiting...\n";
+        //std::cout << "Server waiting...\n";
         server->refillSets();
-        //std::cout << "\nCHECK REMOVALS\n";
-        //server->remove();
+
         int ret = server->selector();
-        std::cout << "RET = " << ret << "\n";
+        //std::cout << "RET = " << ret << "\n";
         if (ret < 0)
         {
             std::cout << ret << ": Select error, skip cycle\n";
@@ -69,16 +68,20 @@ int main (int argc, char *argv[])
             continue ;
         }
         if (!ret)
+        {
+            //std::cout << "\nCHECK REMOVALS\n";
+            server->remove();
             continue ;
-        std::cout << "\nCHECK PORTS\n";
+        }
+        //std::cout << "\nCHECK PORTS\n";
         server->handleConnections();
-        std::cout << "\nCHECK CLIENTS\n";
+        //std::cout << "\nCHECK CLIENTS\n";
         server->readRequests();
-        std::cout << "\nCHECK REMOVALS\n";
+        //std::cout << "\nCHECK REMOVALS\n";
         server->remove();
-        std::cout << "\nCHECK ANSWERS\n";
+        //std::cout << "\nCHECK ANSWERS\n";
         server->sendAnswer();
-        std::cout << "\nCHECK REMOVALS\n";
+        //std::cout << "\nCHECK REMOVALS\n";
         server->remove();
         
     }

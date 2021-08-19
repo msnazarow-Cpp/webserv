@@ -14,17 +14,26 @@ private:
     int pos;
     int status;
     int descriptor;   
-    
+    bool constant;
 
 public:
-    FileUpload(std::string filepath, int size, std::string const &content, Client *client): filepath(filepath), size(size), content(content), client(client), pos(0), status(0)
+    FileUpload(std::string filepath, int size, std::string const &content, Client *client, bool constant): filepath(filepath), size(size), content(content), client(client), pos(0), status(0), constant(constant)
     {
-        descriptor = open(filepath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0777);
-        //std::cout << "Descriptor = " << descriptor << "\n";
-        //std::cout << "CONTENT:\n" << content << "\nEND CONTENT\n";
+        if (!constant)
+        {
+            descriptor = open(filepath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0777);
+            //std::cout << "Descriptor = " << descriptor << "\n";
+            //std::cout << "CONTENT:\n" << content << "\nEND CONTENT\n";
+            //std::cout << "FILEPATH: " << this->filepath << "\n";
+        }
+        else
+        {
+            descriptor = open(filepath.c_str(), O_RDONLY);
+            //std::cout << "Descriptor = " << descriptor << "\n";
+            //std::cout << "CONTENT:\n" << content << "\nEND CONTENT\n";
+        }
         if (descriptor < 0)
             throw Exception("File writing exception");
-        //std::cout << "FILEPATH: " << this->filepath << "\n";
     }
     ~FileUpload()
     {
@@ -86,6 +95,11 @@ public:
     Client *getClient()
     {
         return (client);
+    }
+
+    bool isConstant()
+    {
+        return (constant);
     }
 };
 

@@ -6,10 +6,12 @@
 #endif
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 
 #include <cstdio>
+//#include <ctime>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -50,12 +52,17 @@ private:
     FileUpload *fileWrite;
     FileUpload *fileRead;
     int status;
+    bool keepAlive;
+
+    struct timeval timer;
     
 public:
-    Client(Port *port, timeval &timeout): fileWrite(0), fileRead(0)
+    Client(Port *port, struct timeval &timeout): fileWrite(0), fileRead(0)
     {
         //std::cout << "CLIENT TO PORT " << port->getDescriptor() << "\n";
-        descriptor = accept(port->getDescriptor(), 0, 0);
+        sockaddr_in addr;
+        int addrLen = sizeof(addr);
+        descriptor = accept(port->getDescriptor(), (sockaddr *) &addr, (socklen_t *)&addrLen);
         if (descriptor < 0)
             throw Exception("Client connection exception");
         if (fcntl(descriptor, F_SETFL, O_NONBLOCK) < 0)
@@ -66,6 +73,9 @@ public:
         requestLen = 0;
         status = 0;
         responsePos = 0;
+        code = 0;
+        keepAlive = false;
+        gettimeofday(&timer, 0);
     }
     
     ~Client()
@@ -76,6 +86,7 @@ public:
     
     void reset()
     {
+        //std::cout << "COMPLETE RESET\n";
         buffer.str("");
         response.str("");
         path.str("");
@@ -99,7 +110,10 @@ public:
         
         resetFile(&fileWrite);
         resetFile(&fileRead);
-        status = 0;
+        if (keepAlive)
+            status = 0;
+        else
+            status = -1;
     }
     
     int &getDescriptor()
@@ -267,21 +281,44 @@ public:
         envs.insert(std::pair<std::string, std::string>("SERVER_PORT", streamPort.str()));
         streamPort.str("");
         //std::cout << "Request port: " << envs["SERVER_PORT"] << "\n";
-        
+
+        pos = request.find("Connection: ", pos2);
+        if (pos == std::string::npos)
+            keepAlive = false;
+        else
+        {
+            pos += 12;
+            pos2 = request.find("\r\n", pos);
+            if (pos2 == std::string::npos)
+                keepAlive = false;
+            else
+            {
+                if ((!request.compare(pos, pos2 - pos, "keep-alive")))
+                    keepAlive = true;
+                else
+                    keepAlive = false;
+            }
+        }
+
+
         bool isErrorPage, isLegit;
         //isLegit = true;
         path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code);
         //std::cout << "CGI = " << cgi << "\n";
         if (!isLegit || isErrorPage)
         {
-            std::ifstream f(path.str().c_str());
+            /*std::ifstream f(path.str().c_str());
             if (f.good())
             {
                 std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
                 content = str;
             }
-            else
-            {
+            else*/
+            try{
+                fileRead = new FileUpload(path.str(), 0, "", this, true);
+                fileRead->setStatus(2);
+                status = 6;
+            }catch(Exception &e){
                 switch (code){
                     case 400:{
                         content = "<h1>400: Bad request</h1>";
@@ -300,11 +337,33 @@ public:
                         break;
                     }
                 }
+                status = 2;
+                formAnswer();
             }
-            f.close();
+            /*{
+                switch (code){
+                    case 400:{
+                        content = "<h1>400: Bad request</h1>";
+                        break;
+                    }
+                    case 403:{
+                        content = "<h1>403: Access forbidden</h1>";
+                        break;
+                    }
+                    case 404:{
+                        content = "<h1>404: Not Found</h1>";
+                        break;
+                    }
+                    case 405:{
+                        content = "<h1>405: Request type not allowed</h1>";
+                        break;
+                    }
+                }
+            }*/
+            //f.close();
             //std::cout << "\nADDRESS IS: " << path.str() << "\n";
-            status = 2;
-            formAnswer();
+            //status = 2;
+            //formAnswer();
             return (false);
         }
 
@@ -376,7 +435,7 @@ public:
             requestBody = request.substr(pos2, getLen());
             //std::cout << "Request body:\n#" << requestBody << "#\nEnd\n";
             try{
-               // std::cout << "HERE1\n";
+                //std::cout << "HERE1\n";
                 std::stringstream filename;
                 //std::cout << "Map: " << result->second.getRoot() << "\n";
                 filename << result->second.getBuffer() << "/." << port->getDescriptor() << "_" << descriptor;
@@ -385,9 +444,11 @@ public:
                 //std::cout << "RequestBuffer: " << requestBuffer << "\n";
                 std::stringstream tmp2;
                 tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
-                fileWrite = new FileUpload(requestBuffer, getLen(), requestBody, this);
+                fileWrite = new FileUpload(requestBuffer, getLen(), requestBody, this, false);
+                //std::cout << "Client " << getDescriptor() << "created fileWrite " << getFileWrite()->getDescriptor() << "\n";
                 filename << "_read";
-                fileRead = new FileUpload(filename.str(), 0, "", this);
+                fileRead = new FileUpload(filename.str(), 0, "", this, false);
+                //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
                 envs["HTTP_TMP"] = tmp2.str();
                 requestBody.clear();
                 setStatus(3);
@@ -404,15 +465,36 @@ public:
         }
         else if (!envs["QUERY_STRING"].empty() && !cgi.empty())
         {
-            setStatus(3);
+            try{
+                std::stringstream filename;
+                fileWrite = 0;
+                filename << result->second.getBuffer() << "/." << port->getDescriptor() << "_" << descriptor << "_read";
+                fileRead = new FileUpload(filename.str(), 0, "", this, false);
+                //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
+                envs["HTTP_TMP"] = "";
+                setStatus(3);
+                filename.str("");
+            } catch (Exception &e){
+                std::cout << e.what() << "\n";
+                setStatus(-1);
+                code = 404;
+            }
             return (false);
         }
         
-        
+        try{
+            fileRead = new FileUpload(path.str(), 0, "", this, true);
+            fileRead->setStatus(2);
+            status = 6;
+        }catch(Exception &e){
+            std::cout << e.what() << "\n";
+            setStatus(-1);
+            code = 404;
+        }
        // else
         //{
             //std::cout << "HERE1: " << path.str() << "\n";
-            std::ifstream f(path.str().c_str());
+            /*std::ifstream f(path.str().c_str());
             if (f.good())
             {
                 std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
@@ -424,7 +506,7 @@ public:
             f.close();
             //std::cout << "\nADDRESS IS: " << path.str() << "\n";
             status = 2;
-            formAnswer();
+            formAnswer();*/
         //}
         
         return (false);
@@ -521,19 +603,21 @@ public:
     
     void formAnswer()
     {
-        std::cout << "FORM ANSWER\n";
+        //std::cout << "FORM ANSWER\n";
         if (status == 4)
         {
             status = 5;
             cgiResponseSimple();
             return ;
         }
-        
+        if (!code)
+            code = 200;
         /*if (code == 404)
             content = "<h1>404 Not Found</h1>";*/
         //std::string contentStr = content.str();
         //std::cout << "CONTENT: " << content << "\n";
-        response << requestProtocol << " " << code << " OK\r\n";
+        //response << requestProtocol << " " << code << " OK\r\n";
+        response << "HTTP/1.1 " << code << " OK\r\n";
         response << "Cache-Control: no-cache, private\r\n";
         response << "Content-Type: text/html\r\n";
         response << "Content-Length: " << content.size() << "\r\n";
@@ -542,7 +626,7 @@ public:
         responseSize = response.str().size() + 1;
         /*if (requestType == 1)
             status = 2;*/
-        std::cout << "End form answer\n";
+        //std::cout << "End form answer\n";
     }
     
     void handleRequest(Parser *parser)
@@ -575,17 +659,17 @@ public:
     
     void sendResponse()
     {
-        std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
+        //std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
         //std::cout << "To send:\n" << response.str().substr(responsePos, responseSize - responsePos).c_str() << "\nEND\n";
         int send_size = send(descriptor, response.str().substr(responsePos, responseSize - responsePos).c_str(), responseSize - responsePos, 0);
-        std::cout << "Send returned : " << send_size << "\n";
+        //std::cout << "Send returned : " << send_size << "\n";
         if (send_size <= 0)
             std::cout << "MAY BE ERROR HERE\n";
             
         responsePos += send_size - 1;
         if (responsePos == responseSize - 1)
             reset();
-        std::cout << "End send response\n";
+        //std::cout << "End send response\n";
     }
     
     bool ends_with(std::string const &value, std::string const &ending)
@@ -668,8 +752,10 @@ public:
     {
         if (*file)
         {
+            //std::cout << "CLient " << getDescriptor() << " | has reseted file " << (*file)->getDescriptor() << "\n";
             (*file)->setStatus(-1);
-            remove(((*file)->getPath()).c_str());
+            if (!(*file)->isConstant())
+                remove(((*file)->getPath()).c_str());
             delete (*file);
             *file = 0;
         }
@@ -682,8 +768,24 @@ public:
     
     void finishPipe()
     {
+        //std::cout << "FINISH PIPE\n";
         fileRead->setStatus(2);
-        resetFile(&fileWrite);
+        //resetFile(&fileWrite);
+    }
+
+    bool shouldKeep()
+    {
+        return (keepAlive);
+    }
+
+    struct timeval &getTimer()
+    {
+        return (timer);
+    }
+
+    void setTimer()
+    {
+        gettimeofday(&timer, 0);
     }
 };
 

@@ -64,4 +64,4 @@
     fwrite($newfile, $newcontent);
     fclose($newfile);
     echo "Uploadded successfully";
-?> #Тут не было закрывающей скобки
+?>
