@@ -22,7 +22,7 @@ public:
     class ParserNotValidException:std::exception{};
     Parser(char *confFileName, Server *server);
     bool check_block(ServerBlock & block);
-    std::string getfilename(std::string server_name, int port, std::string request);
+    std::string getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code);
 };
 
 

@@ -8,3 +8,7 @@ std::ostream &operator<<(std::ostream &os, const Location &d) {
     return (os << d.location << " " << d.root << " " << d.index << " " << d.autoindex << " "
     << d.client_max_body_size << " " << d.fastcgi_pass << " " << d.fastcgi_params << std::endl);
 }
+
+std::string Location::getCgiPath(){
+    return (cgi_pass);
+}

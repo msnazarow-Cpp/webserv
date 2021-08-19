@@ -30,33 +30,29 @@ private:
     
     size_t requestLen;
     std::string content;
+    std::string cgi;
     
     int requestType;
     std::stringstream path;
     std::string target;
     
     std::map<std::string, std::string> envs;
-    //std::string requestMethod;
     std::string requestProtocol;
-    //std::string requestQuery;
-    //std::string requestHost;
     std::string requestBody;
-    //std::string requestPort;
-    //std::string requestContentType;
     std::string requestBoundary;
     
     std::string requestBuffer;
     
     int requestBodySize;
-    int pipefd[2];
     
     
     Port *port;
-    FileUpload *file;
+    FileUpload *fileWrite;
+    FileUpload *fileRead;
     int status;
     
 public:
-    Client(Port *port, timeval &timeout): file(0)
+    Client(Port *port, timeval &timeout): fileWrite(0), fileRead(0)
     {
         //std::cout << "CLIENT TO PORT " << port->getDescriptor() << "\n";
         descriptor = accept(port->getDescriptor(), 0, 0);
@@ -85,16 +81,11 @@ public:
         path.str("");
         content.clear();
         requestBodySize = 0;
-        
+        cgi.clear();
         target.clear();
         requestProtocol.clear();
-        //requestHost.clear();
-        //requestPort.clear();
-        //requestQuery.clear();
         requestBody.clear();
         requestBuffer.clear();
-        //requestMethod.clear();
-        //requestContentType.clear();
         requestBoundary.clear();
         requestType = 0;
         
@@ -106,7 +97,8 @@ public:
         code = 0;
         
         
-        file = 0;
+        resetFile(&fileWrite);
+        resetFile(&fileRead);
         status = 0;
     }
     
@@ -175,8 +167,16 @@ public:
             pos = 4;
         else if (requestType == 2)
             pos = 5;
-        else 
-            pos = -1; // TODO: pos не инициализируется
+        else if (requestType == 3)
+            pos = 7;
+        else
+        {
+            content = "Wrong request type";
+            status = 2;
+            code = 200;
+            formAnswer();
+            return (false);
+        }
         //std::cout << "METHOD: #" << envs["REQUEST_METHOD"] << "#\n";
         
         
@@ -268,50 +268,48 @@ public:
         streamPort.str("");
         //std::cout << "Request port: " << envs["SERVER_PORT"] << "\n";
         
-        path << parser->getfilename(requestHost, requestPort, target);
-        //std::cout << "Path: " << path.str() << "\n";
-        /*
-        //CONTENT-TYPE
-        pos = request.find("Content-Type: ", pos2);
-        if (pos == std::string::npos)
+        bool isErrorPage, isLegit;
+        //isLegit = true;
+        path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code);
+        //std::cout << "CGI = " << cgi << "\n";
+        if (!isLegit || isErrorPage)
         {
-            std::cout << "Wrong request header (content-type)\n";
-            status = -1;
-            return (true);
+            std::ifstream f(path.str().c_str());
+            if (f.good())
+            {
+                std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                content = str;
+            }
+            else
+            {
+                switch (code){
+                    case 400:{
+                        content = "<h1>400: Bad request</h1>";
+                        break;
+                    }
+                    case 403:{
+                        content = "<h1>403: Access forbidden</h1>";
+                        break;
+                    }
+                    case 404:{
+                        content = "<h1>404: Not Found</h1>";
+                        break;
+                    }
+                    case 405:{
+                        content = "<h1>405: Request type not allowed</h1>";
+                        break;
+                    }
+                }
+            }
+            f.close();
+            //std::cout << "\nADDRESS IS: " << path.str() << "\n";
+            status = 2;
+            formAnswer();
+            return (false);
         }
-        pos += 14;
-        pos2 = request.find(";", pos);
-        if (pos2 == std::string::npos)
-        {
-            std::cout << "Wrong request header (content-type)\n";
-            status = -1;
-            return (true);
-        }
-        //requestContentType = request.substr(pos, pos2 - pos);
-        envs.insert(std::pair<std::string, std::string>("CONTENT_TYPE", request.substr(pos, pos2 - pos)));
-        std::cout << "CONTENT-TYPE: #" << envs["CONTENT_TYPE"] << "#\n";
+
         
-        //BOUNDARY
-        pos = request.find("boundary=", pos2);
-        if (pos == std::string::npos)
-        {
-            std::cout << "Wrong request header (boundary)\n";
-            status = -1;
-            return (true);
-        }
-        pos += 9;
-        pos2 = request.find("\r\n", pos);
-        if (pos2 == std::string::npos)
-        {
-            std::cout << "Wrong request header (boundary)\n";
-            status = -1;
-            return (true);
-        }
-        requestBoundary = request.substr(pos, pos2 - pos);
-        std::cout << "BOUNDARY: #" << requestBoundary << "#\n";
-        */
         
-        pos2 += 2;;
         pos = request.find("\r\n\r\n", pos2);
         if (pos == std::string::npos)
         {
@@ -320,6 +318,22 @@ public:
             return (true);
         }
         std::string headerTmp = request.substr(pos2, pos - pos2 + 2);
+        
+        if (requestType == 3)
+        {
+            if (!remove(path.str().c_str()))
+            {
+                content = "<h1>File " + target + " deleted successfully</h1>";
+                code = 200;
+            }
+            else
+            {
+                code = 404;
+                //content = "<h1>Access forbidden</h1>";
+            }
+            status = 2;
+            formAnswer();
+        }
         
         /*std::cout << "HEADER REST:\n" << headerTmp << "\nEND\n";
         pos2 = 0;
@@ -352,8 +366,10 @@ public:
         envs["PATH_TRANSLATED"] = target;
         envs["REDIRECT_STATUS"] = true;
         
+        
+        
         //BODY
-        if (getLen())
+        if (getLen() && !cgi.empty())
         {
             pos2 = request.find("\r\n\r\n");
             pos2 += 4;
@@ -369,7 +385,9 @@ public:
                 //std::cout << "RequestBuffer: " << requestBuffer << "\n";
                 std::stringstream tmp2;
                 tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
-                file = new FileUpload(requestBuffer.c_str(), getLen(), requestBody);
+                fileWrite = new FileUpload(requestBuffer, getLen(), requestBody, this);
+                filename << "_read";
+                fileRead = new FileUpload(filename.str(), 0, "", this);
                 envs["HTTP_TMP"] = tmp2.str();
                 requestBody.clear();
                 setStatus(3);
@@ -382,9 +400,18 @@ public:
                 setStatus(-1);
                 code = 404;
             }
+            return (false);
         }
-        else
+        else if (!envs["QUERY_STRING"].empty() && !cgi.empty())
         {
+            setStatus(3);
+            return (false);
+        }
+        
+        
+       // else
+        //{
+            //std::cout << "HERE1: " << path.str() << "\n";
             std::ifstream f(path.str().c_str());
             if (f.good())
             {
@@ -392,11 +419,13 @@ public:
                 content = str;
                 code = 200;
             }
+            else
+                code = 404;
             f.close();
             //std::cout << "\nADDRESS IS: " << path.str() << "\n";
             status = 2;
             formAnswer();
-        }
+        //}
         
         return (false);
     }
@@ -421,15 +450,19 @@ public:
             status = -1;
             return ;
         }
+        /*fileRead->descriptor = open(FileRead->filepath);
+        if (fileRead->getDescriptor() < 0)
+        {
+            std::cout << "PIPE FILE ERROR\n";
+            status = -1;
+            return ;
+        }*/
         std::vector<std::string> args_cpp;
-        args_cpp.push_back("./cgi/php-cgi");
-        args_cpp.push_back("./www/server1/fileupload.php");
+        args_cpp.push_back(cgi);
+        args_cpp.push_back(path.str());
         const char * args[3] = {args_cpp[0].c_str(), args_cpp[1].c_str(), NULL};
         int result = 0;
-        pipefd[0] = descriptor;
-        pipe(pipefd);
-        //std::cout << "Pipe = " << pipefd[0] << "\n";
-        //exit(0);
+
         pid_t pid = fork();
         if (pid < 0)
         {
@@ -441,51 +474,65 @@ public:
         
         if (!pid)
         {
-            dup2(pipefd[1], 1);
-            dup2(pipefd[1], 2);
-            close(pipefd[0]);
+            dup2(fileRead->getDescriptor(), 1);
+            dup2(fileRead->getDescriptor(), 2);
             dup2(enter, 0);
-            exit(execve("./cgi/php-cgi", (char* const *)args, cgiEnvCreate()));
+            exit(execve(cgi.c_str(), (char* const *)args, cgiEnvCreate()));
         }
         else
         {
-            waitpid(pid, &result, 0);
-            close(pipefd[1]);
+            waitpid(pid, &result, 0);//&result
             close(enter);
+            //std::cout << "Check PATH: " << fileRead->getPath() << "\n";
+            /*std::ifstream f(fileRead->getPath().c_str());
+            if (f.good())
+            {
+                std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+                content = str;
+                //std::cout << "CONTENT:\n" << content << "\nEnd\n";
+                code = 200;
+            }
+            else
+            {
+                code = 500;
+                
+            }
+            f.close();
+            //std::cout << "\nADDRESS IS: " << path.str() << "\n";
+            status = 2;
+            formAnswer();*/
+            
+            
+            
+            //std::cout << "PATH: " << fileRead->filepath << "\n";
+            //fileRead->descriptor = open(fileRead->filepath, O_RDONLY);
+            
+            if (!fileRead->resetDescriptor())
+            {
+                std::cout << "PIPE FILE ERROR\n";
+                status = -1;
+                fileRead->setStatus(-2);
+                return ;
+            }
+            fileRead->setStatus(2);
             status = 6;
-            /*char c;
-            
-            while(read(pipefd[0], &c, 1) > 0)
-                content += c;
-            finishPipe();*/
-            /*close(pipefd[0]);
-            
-            resetFile();
-            //std::cout << "CGI: #" << content << "#END CGI\n";
-            setStatus(2);*/
         }
-        /*if (!result)
-            code = 200;
-        else
-            code = 404; //???*/
     }
     
     void formAnswer()
     {
-        //std::cout << "FORM ANSWER\n";
+        std::cout << "FORM ANSWER\n";
         if (status == 4)
         {
             status = 5;
             cgiResponseSimple();
             return ;
         }
-        if (code == 404)
-        {
-            //content.str("");
-            content = "<h1>404 Not Found</h1>";
-        }
+        
+        /*if (code == 404)
+            content = "<h1>404 Not Found</h1>";*/
         //std::string contentStr = content.str();
-        std::cout << "CONTENT: " << content << "\n";
+        //std::cout << "CONTENT: " << content << "\n";
         response << requestProtocol << " " << code << " OK\r\n";
         response << "Cache-Control: no-cache, private\r\n";
         response << "Content-Type: text/html\r\n";
@@ -495,6 +542,7 @@ public:
         responseSize = response.str().size() + 1;
         /*if (requestType == 1)
             status = 2;*/
+        std::cout << "End form answer\n";
     }
     
     void handleRequest(Parser *parser)
@@ -517,10 +565,6 @@ public:
             if (result != port->getMap().end())
             {
                 host.str("");
-                /*if (requestType == 1)
-                    handleGet(request, result);
-                else if (requestType == 2)
-                    handlePost(request, result);*/
                 parseHeader(request, result, parser);
             }
             //else cтраница недоступна по данному порту
@@ -531,15 +575,17 @@ public:
     
     void sendResponse()
     {
-        //std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
+        std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
         //std::cout << "To send:\n" << response.str().substr(responsePos, responseSize - responsePos).c_str() << "\nEND\n";
         int send_size = send(descriptor, response.str().substr(responsePos, responseSize - responsePos).c_str(), responseSize - responsePos, 0);
-        //std::cout << "Send returned : " << send_size << "\n";
-        //if (send_size <= 0)
+        std::cout << "Send returned : " << send_size << "\n";
+        if (send_size <= 0)
+            std::cout << "MAY BE ERROR HERE\n";
             
         responsePos += send_size - 1;
         if (responsePos == responseSize - 1)
             reset();
+        std::cout << "End send response\n";
     }
     
     bool ends_with(std::string const &value, std::string const &ending)
@@ -552,6 +598,7 @@ public:
     bool is_full()
     {
         std::string value = getBufferStr();
+        //std::cout << value << "\n";
         if (!getType())
         {
             if (!value.compare(0, 4, "GET "))
@@ -566,8 +613,10 @@ public:
                 envs.insert(std::pair<std::string, std::string>("REQUEST_METHOD", "POST"));
                 setType(2);
             }
+            else if (!value.compare(0, 7, "DELETE "))
+                setType(3);
         }
-        if (getType() == 1 && ends_with(value, "\r\n\r\n"))
+        if (((getType() == 1 || getType() == 3) && ends_with(value, "\r\n\r\n")) || (!requestType && value.length()))
             return (true);
 
         size_t pos = 5;
@@ -605,26 +654,27 @@ public:
         return (false);
     }
     
-    FileUpload *getFile()
+    FileUpload *getFileWrite()
     {
-        return (file);
+        return (fileWrite);
     }
     
-    void resetFile()
+    FileUpload *getFileRead()
     {
-        if (file)
+        return (fileRead);
+    }
+    
+    void resetFile(FileUpload **file)
+    {
+        if (*file)
         {
-            file->setStatus(-1);
-            remove(file->getPath());
-            file = 0;
+            (*file)->setStatus(-1);
+            remove(((*file)->getPath()).c_str());
+            delete (*file);
+            *file = 0;
         }
     }
-    
-    int getPipe()
-    {
-        return (pipefd[0]);
-    }
-    
+        
     void fillContent(char c)
     {
         content += c;
@@ -632,12 +682,8 @@ public:
     
     void finishPipe()
     {
-        //std::cout << "Finish PIPE\n";
-        close (pipefd[0]);
-        resetFile();
-        //std::cout << "CGI: #" << content << "#END CGI\n";
-        setStatus(2);
-        formAnswer();
+        fileRead->setStatus(2);
+        resetFile(&fileWrite);
     }
 };
 

@@ -7,7 +7,7 @@
 #include "Extention.hpp"
 #include <sys/stat.h>
 #ifndef IP
-    #define IP localhost
+    #define IP "localhost"
 #endif
 bool Parser::check_block(ServerBlock &block) {
     if (!block.locations.empty()){
@@ -81,7 +81,7 @@ Parser::Parser(char *confFileName, Server *server) {
                             if (tmp.server_name.empty())
                                 tmp.server_name.insert(IP);
                             blocks.push_back(tmp);
-                            blocks[blocks.size() - 1].fillPorts(server);
+                            blocks.back().fillPorts(server);
                         }
                         else
                             std::cout << "Block " << tmp << "has been excluded from set because of error\n";
@@ -197,12 +197,15 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
-                    if (str == "GET")
+                    if (str == "GET"){
                         loc.methods.insert(GET);
-                    else if (str == "POST") {
+                        //std::cout << "GET INSERTED\n";
+                    }else if (str == "POST") {
                         loc.methods.insert(POST);
+                        //std::cout << "POST INSERTED\n";
                     } else if (str == "DELETE") {
                         loc.methods.insert(DELETE);
+                        //std::cout << "DELETE INSERTED\n";
                     } else {
                         throw ParserNotValidException();
                     }
@@ -264,10 +267,11 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
 }
 
 
-std::string Parser::getfilename(std::string server_name, int port, std::string request) {
+std::string Parser::getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code) {
     std::string out;
     struct stat statbuf;
-
+    
+    //std::cout << "SEARCH: " << server_name << " | " << port << " | " << request << "\n";
     for (size_t i = 0; i < blocks.size(); ++i) {
         if (!blocks[i].server_name.count(server_name) || !blocks[i].listen.count(port))
             continue;
@@ -278,29 +282,89 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             hasEnding(request, loc.location[1]))){
                 out = loc.root + request;
                 if (stat(out.c_str(), &statbuf))
+                {
+                    isErrorPage = true;
+                    code = 404;
                     return "404";
+                }
                 if (S_ISDIR(statbuf.st_mode))
                     for (size_t k = 0; k < loc.index.size(); ++k) {
-                        if((out = getfilename(server_name, port, request + loc.index[k])) != "404"){
+                        if((out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code)) != "404"){
+                            isErrorPage = false;
                             return (out);
                         }
                     }
+                isErrorPage = false;
+                cgi = loc.getCgiPath();
+                //std::cout << "loc methods count = " << loc.methods.size() << "\n";
+                switch (requestType) {
+                    case 0:{
+                        isLegit = false;
+                        code = 400;
+                        //return
+                        break ;
+                    }
+                    case 1:{
+                        if (loc.methods.count(GET))
+                            isLegit = true;
+                        else
+                        {
+                            code = 405;
+                            isLegit = false;
+                            //return
+                        }
+                        break ;
+                    }
+                    case 2:{
+                        if (loc.methods.count(POST))
+                            isLegit = true;
+                        else
+                        {
+                            code = 405;
+                            isLegit = false;
+                            //return
+                        }
+                        break ;
+                    }
+                    case 3:{
+                        if (loc.methods.count(DELETE))
+                            isLegit = true;
+                        else
+                        {
+                            code = 405;
+                            isLegit = false;
+                            //return
+                        }
+                        break ;
+                    }
+                }
+                //std::cout << "HERE5: CGI = " << cgi << "\n";
                 return (out);
             }
         }
         out = block.root + request;
         if (stat(out.c_str(), &statbuf))
+        {
+            isErrorPage = true;
+            code = 404;
             return "404";
+        }
         if (S_ISDIR(statbuf.st_mode))
         {
             for (size_t k = 0; k < block.index.size(); ++k) {
-                if((out = getfilename(server_name, port, request + block.index[k])) != "404"){
+                if((out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code)) != "404"){
+                    isErrorPage = false;
                     return (out);
                 }
             }
+            isErrorPage = true;
+            code = 403;
             return ("403");
         }
+        isErrorPage = false;
         return (out);
     }
+    isErrorPage = true;
+    code = 404;
     return ("404");
 }

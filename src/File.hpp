@@ -2,24 +2,28 @@
 #define FILE_HPP
 #include "Server.hpp"
 
+class Client;
+
 class FileUpload{
 private:
-    char const *filepath;
+    friend class Client;
+    std::string filepath;
     int size;
     std::string content;
     int pos;
     int status;
     int descriptor;   
-    
+    Client *client;
 
 public:
-    FileUpload(char const *filepath, int size, std::string const &content): filepath(filepath), size(size), content(content), pos(0), status(0)
+    FileUpload(std::string filepath, int size, std::string const &content, Client *client): filepath(filepath), size(size), content(content), client(client), pos(0), status(0)
     {
-        descriptor = open(filepath, O_CREAT | O_TRUNC | O_WRONLY, 0777);
+        descriptor = open(filepath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0777);
         //std::cout << "Descriptor = " << descriptor << "\n";
         //std::cout << "CONTENT:\n" << content << "\nEND CONTENT\n";
         if (descriptor < 0)
             throw Exception("File writing exception");
+        //std::cout << "FILEPATH: " << this->filepath << "\n";
     }
     ~FileUpload()
     {
@@ -63,16 +67,26 @@ public:
         status = val;
     }
     
-    const char *getPath()
+    std::string getPath()
     {
         return (filepath);
     }
     
-    void resetDescriptor() //TEST ONLY
+    bool resetDescriptor()
     {
         close(descriptor);
+        //std::cout << "TRY TO OPEN: " << filepath << "\n";
+        descriptor = open(filepath.c_str(), O_RDONLY);
+        if (descriptor < 0)
+            return (false);
+        return (true);
     }
     
+    Client *getClient()
+    {
+        return (client);
+    }
 };
 
+#include "Client.hpp"
 #endif

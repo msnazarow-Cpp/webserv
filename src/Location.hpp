@@ -24,6 +24,7 @@ struct Location{
     std::string cgi_pass;
     friend std::ostream& operator<<(std::ostream &os, const Location& d);
     Location(): location(), root(), index(), autoindex(false), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(){}
+    std::string getCgiPath();
 };
 std::ostream& operator<<(std::ostream &os, const Location& d);
 
