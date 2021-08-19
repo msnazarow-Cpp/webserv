@@ -341,7 +341,7 @@ public:
                 if (ret > 0)
                 {
                     std::cout << "RET = " << ret << "\n";
-                    for (size_t k = 0; k < ret; k++)
+                    for (int k = 0; k < ret; k++)
                     {
                         file->getClient()->fillContent(buf[k]);
                         //std::cout << "#" << buf[i] << "#";
@@ -351,7 +351,7 @@ public:
                 else if (!ret)
                 {
                     std::cout << "RET = 0\n";
-                    size_t k = 0;
+                    int k = 0;
                     while (buf[k])
                     {
                         file->getClient()->fillContent(buf[k]);

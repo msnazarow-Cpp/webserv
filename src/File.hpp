@@ -10,10 +10,11 @@ private:
     std::string filepath;
     int size;
     std::string content;
+    Client *client;
     int pos;
     int status;
     int descriptor;   
-    Client *client;
+    
 
 public:
     FileUpload(std::string filepath, int size, std::string const &content, Client *client): filepath(filepath), size(size), content(content), client(client), pos(0), status(0)
