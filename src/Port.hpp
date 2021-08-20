@@ -31,10 +31,16 @@ public:
         addr.sin_family = AF_INET;
         addr.sin_addr.s_addr = htons(INADDR_ANY);
         addr.sin_port = htons(port);
+        int reuse = 1;
+        if (setsockopt(descriptor, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+            throw Exception("Setsockopt(SO_REUSEADDR) exception");
+        if (setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &reuse, sizeof(reuse)) < 0)
+            throw Exception("Setsockopt(SO_NOSIGPIPE) exception");
         if (bind(descriptor, (sockaddr *)&addr, sizeof(addr)) < 0)
             throw Exception("Bind to port/ip exception");
         if (listen(descriptor, SOMAXCONN) < 0)
             throw Exception("Listening exception");
+
     }
     
     void addClient(int &client)

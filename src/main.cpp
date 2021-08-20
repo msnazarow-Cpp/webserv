@@ -23,7 +23,8 @@
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
-
+int Client::count = 0;
+int Client::active = Client::count;
 int main (int argc, char *argv[])
 {
     char *arg; //TODO Что тут происходит - непонятно ?
@@ -55,6 +56,7 @@ int main (int argc, char *argv[])
 
     while (1)
     {
+        std::cout << "CLIENT TOTAL = " << Client::count << " | ACTIVE: " << Client::active << "\n";
         //std::cout << "Server waiting...\n";
         server->refillSets();
 
@@ -70,7 +72,8 @@ int main (int argc, char *argv[])
         if (!ret)
         {
             //std::cout << "\nCHECK REMOVALS\n";
-            server->remove();
+            //server->remove();
+            //std::cout << "SELECT TIMEOUT\n";
             continue ;
         }
         //std::cout << "\nCHECK PORTS\n";
@@ -78,11 +81,11 @@ int main (int argc, char *argv[])
         //std::cout << "\nCHECK CLIENTS\n";
         server->readRequests();
         //std::cout << "\nCHECK REMOVALS\n";
-        server->remove();
+        //server->remove();
         //std::cout << "\nCHECK ANSWERS\n";
         server->sendAnswer();
         //std::cout << "\nCHECK REMOVALS\n";
-        server->remove();
+        //server->remove();
         
     }
 }

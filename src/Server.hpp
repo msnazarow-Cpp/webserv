@@ -41,46 +41,64 @@ public:
         //std::cout << "Clients size = " << allclients.size() << "\n";
         struct timeval curTime;
         gettimeofday(&curTime, 0);
-        for (std::vector<Client *>::iterator it = allclients.begin(); it != allclients.end(); ++it)
+        //for (std::vector<Client *>::iterator it = allclients.begin(); it != allclients.end(); ++it)
+        std::vector<Client *>::iterator itC = allclients.begin();
+        //std::cout << "Here 1\n";
+        while (itC != allclients.end())
         {
-            if (curTime.tv_sec - (*it)->getTimer().tv_sec >= TIMEOUT && (*it)->getStatus() >= 0)
+            //std::cout << "Check client " << (*itC)->getDescriptor() << "\n";
+            if ((*itC)->getStatus() < 0 || curTime.tv_sec - (*itC)->getTimer().tv_sec >= TIMEOUT)// && (*itC)->getStatus() >= 0)
             {
-                if ((*it)->getFileWrite() && ((*it)->getFileWrite()->getStatus() >= 0))
+                //std::cout << "Removed client: " << (*itC)->getDescriptor() << "\n";
+                if ((*itC)->getFileWrite())// && ((*itC)->getFileWrite()->getStatus() >= 0))
                 {
-                    (*it)->getFileWrite()->setStatus(-2);
-                    removeFile((*it)->getFileWrite());
+                    //(*itC)->getFileWrite()->setStatus(-2);
+                    //removeFile((*itC)->getFileWrite());
+                    //std::cout << "Removed file " << (*itC)->getFileWrite()->getDescriptor() << "\n";
+                    std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileWrite());
+                    if (itF != allfiles.end())
+                        allfiles.erase(itF);
                 }
-                if ((*it)->getFileRead() && ((*it)->getFileRead()->getStatus() >= 0))
+                if ((*itC)->getFileRead())// && ((*itC)->getFileRead()->getStatus() >= 0))
                 {
-                    (*it)->getFileRead()->setStatus(-2);
-                    removeFile((*it)->getFileRead());
+                    //(*itC)->getFileRead()->setStatus(-2);
+                    //removeFile((*itC)->getFileRead());
+                    //std::cout << "Removed file " << (*itC)->getFileRead()->getDescriptor() << "\n";
+                    std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileRead());
+                    if (itF != allfiles.end())
+                        allfiles.erase(itF);
                 }
-                removeClient(*it);
+
+                //removeClient(*itC);
+                //std::vector<Client *>::iterator toDelete = itC++;
+                delete (*itC);
+                itC = allclients.erase(itC);
+                continue ;
             }
 
-            if (!(*it)->getStatus())
+            if (!(*itC)->getStatus())
             {
-                FD_SET((*it)->getDescriptor(), &read_current);
+                FD_SET((*itC)->getDescriptor(), &read_current);
                 //std::cout << (*it)->getDescriptor() << " (CLIENT) ADDED TO READ SET\n";
             }
-            if ((*it)->getStatus() == 6)
+            if ((*itC)->getStatus() == 6)
             {
-                (*it)->setStatus(7);
+                (*itC)->setStatus(7);
                 //(*it)->finishPipe();
-                addFile((*it)->getFileRead());
+                addFile((*itC)->getFileRead());
                 //std::cout << (*it)->getFileRead()->getDescriptor() << " | path: " << (*it)->getFileRead()->getPath() << " | client = " << (*it)->getDescriptor() << " FILE ADDED TO LIST\n";
             }
-            if ((*it)->getStatus() == 3)
+            if ((*itC)->getStatus() == 3)
             {
-                if (!(*it)->getFileWrite() || (*it)->getFileWrite()->getStatus() == 1)
-                    (*it)->setStatus(4);
-                else if ((*it)->getFileWrite()->getStatus() == -2)
-                    (*it)->setStatus(-1);
+                if (!(*itC)->getFileWrite() || (*itC)->getFileWrite()->getStatus() == 1)
+                    (*itC)->setStatus(4);
+                else if ((*itC)->getFileWrite()->getStatus() == -2)
+                    (*itC)->setStatus(-1);
                 //(*it)->resetFile();
             }
-            if ((*it)->getStatus() == 2 || (*it)->getStatus() == 4)
+            if ((*itC)->getStatus() == 2 || (*itC)->getStatus() == 4)
             {
-                FD_SET((*it)->getDescriptor(), &write_current);
+                FD_SET((*itC)->getDescriptor(), &write_current);
                 //std::cout << (*it)->getDescriptor() << " (CLIENT) ADDED TO WRITE SET\n";
             }
 
@@ -95,25 +113,44 @@ public:
                 removeFile((*it)->getFileWrite);
                 
             }*/
+            itC++;
         }
-        
-        for (std::vector<FileUpload *>::iterator it = allfiles.begin(); it != allfiles.end(); ++it)
+
+        std::vector<FileUpload *>::iterator itF = allfiles.begin();
+        //for (std::vector<FileUpload *>::iterator it = allfiles.begin(); it != allfiles.end(); ++it)
+        while (itF != allfiles.end())
         {
-            if (!(*it)->getStatus())
+            //if (!*itF)
+             //   std::cout << "FILE END\n";
+            //std::cout << "Check file " << (*itF)->getDescriptor() << "\n";
+            //std::cout << "Here F0\n";
+            //std::cout << "Status = " << (*itF)->getStatus() << "\n";
+            if ((*itF)->getStatus() < 0)
             {
-                FD_SET((*it)->getDescriptor(), &write_current);
+                itF = allfiles.erase(itF);
+                //allfiles.erase(toDelete);
+                //std::cout << "Here F4\n";
+                continue ;
+            }
+            //std::cout << "Here F1\n";
+            if (!(*itF)->getStatus())
+            {
+                FD_SET((*itF)->getDescriptor(), &write_current);
                 //std::cout << (*it)->getDescriptor() << " (FILE) ADDED TO WRITE SET\n";
             }
-            if ((*it)->getStatus() == 2)
+            //std::cout << "Here F2\n";
+            if ((*itF)->getStatus() == 2)
             {
-                FD_SET((*it)->getDescriptor(), &read_current);
+                FD_SET((*itF)->getDescriptor(), &read_current);
                 //std::cout << (*it)->getDescriptor() << "FILE ADDED TO SET\n";
             }
+            //std::cout << "Here F3\n";
+            itF++;
         }
         
         for (std::vector<Port *>::iterator it = allports.begin(); it != allports.end(); ++it)
             FD_SET((*it)->getDescriptor(), &read_current);
-       // std::cout << "SET REFILLED\n";
+        //std::cout << "SET REFILLED\n";
        std::cout << "Ports = " << portsCount() << " | Clients = " << clientsCount() << " | Files = " << filesCount() << " | max = " << getLastSock() <<"\n";
     }
     
@@ -273,6 +310,7 @@ public:
     
     void handleConnections()
     {
+        //std::cout << "Handle connection\n";
         Port *curport;
         int descr;
         for (size_t i = 0; i < portsCount(); ++i)
@@ -283,7 +321,7 @@ public:
             if (isSetRead(descr))
             {
                 try{
-                Client *client_sock = new Client(curport, timeout);
+                Client *client_sock = new Client(curport);
                 //std::cout << "New read connection, fd = " << client_sock->getDescriptor() << "\n";
                 addClient(client_sock);
                 }catch (Exception &e){
@@ -291,6 +329,7 @@ public:
                 }
             }
         }
+        //std::cout << "Connection handled\n";
     }
     
     void readRequests()
@@ -298,13 +337,16 @@ public:
         //std::cout << "READ REQUESTS BLOCK\n";
         ssize_t ret;
         int descr;
-        Client *curclient;
-        FileUpload *file;
-        for (size_t i = 0; i < clientsCount(); i++)
+        //Client *curclient;
+        //FileUpload *file;
+        //for (size_t i = 0; i < clientsCount(); i++)
+        //for (std::vector<Client *>::iterator it = allclients.begin(); it != allclients.end(); it++)
+        std::vector<Client *>::iterator itC = allclients.begin();
+        while (itC != allclients.end())
         {
-            curclient = allclients[i];
-            descr = curclient->getDescriptor();
-            //std::cout << "Check client for read: " << descr << " | status = " << curclient->getStatus() << "\n";
+            //curclient = allclients[i];
+            descr = (*itC)->getDescriptor();
+            //std::cout << "Check client for read: " << descr << " | status = " << (*itC)->getStatus() << "\n";
             if (isSetRead(descr))// && !curclient->getStatus())
             {
                 //std::cout << descr << "-client is readable\n";
@@ -312,18 +354,18 @@ public:
                 //std::cout << descr << ": Ret = " << ret << "\n";
                 if (ret > 0)
                 {
-                    curclient->setTimer();
+                    (*itC)->setTimer();
                     for (ssize_t k = 0; k < ret; k++)
                     {
-                        curclient->fillBuffer(buf[k]);
+                        (*itC)->fillBuffer(buf[k]);
                         buf[k] = 0;
                     }
                     //std::cout << "Buffer:\n" << readbufs[*it].str() << "\nEnd buffer\n";
-                    if (curclient->is_full())
+                    if ((*itC)->is_full())
                     {
-                        curclient->handleRequest(_parser);
-                        if (curclient->getStatus() == 3 && curclient->getFileWrite())
-                            addFile(curclient->getFileWrite());
+                        (*itC)->handleRequest(_parser);
+                        if ((*itC)->getStatus() == 3 && (*itC)->getFileWrite())
+                            addFile((*itC)->getFileWrite());
                     }
                 }
                 //if (ret < 0)
@@ -331,21 +373,48 @@ public:
                     //std::cout << "Ret - 1\n";
                 if (ret <= 0)
                 {
-                    file = curclient->getFileWrite();
+                    /*file = (*itC)->getFileWrite();
                     if (file && (file->getStatus() >= 0))
                     {
                         file->setStatus(-2);
                         removeFile(file);
                     }
-                    file = curclient->getFileRead();
+                    file = (*itC)->getFileRead();
                     if (file && (file->getStatus() >= 0))
                     {
                         file->setStatus(-2);
                         removeFile(file);
                     }
-                    removeClient(curclient);
+                    removeClient(*itC);*/
+
+                    if ((*itC)->getFileWrite())// && ((*itC)->getFileWrite()->getStatus() >= 0))
+                        {
+                        //(*itC)->getFileWrite()->setStatus(-2);
+                        //removeFile((*itC)->getFileWrite());
+                        std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileWrite());
+                        if (itF != allfiles.end())
+                            allfiles.erase(itF);
+                        }
+                    if ((*itC)->getFileRead())// && ((*itC)->getFileRead()->getStatus() >= 0))
+                        {
+                        //(*itC)->getFileRead()->setStatus(-2);
+                        //removeFile((*itC)->getFileRead());
+                        std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileRead());
+                        if (itF != allfiles.end())
+                            allfiles.erase(itF);
+                        }
+
+                    //removeClient(*itC);
+                    //std::vector<Client *>::iterator toDelete = itC++;
+                    delete (*itC);
+                    itC = allclients.erase(itC);
+
                 }
+                else
+                    itC++;
             }
+            else
+                itC++;
             /*else if (curclient->getStatus() == 6)
             {
                 //std::cout << curclient->getPipe() << "-pipe is readable\n";
@@ -371,15 +440,19 @@ public:
                     curclient->finishPipe();
                 }
             }*/
-            else if (curclient->getStatus() == -1)
-                removeClient(curclient);
+            /*else if ((*itC)->getStatus() == -1)
+                removeClient(*itC);*/
+
         }
     
 
-        for (size_t i = 0; i < filesCount(); i++)
+        //for (size_t i = 0; i < filesCount(); i++)
+        //for (std::vector<FileUpload *>::iterator it = allfiles.begin(); it != allfiles.end(); it++)
+        std::vector<FileUpload *>::iterator itF = allfiles.begin();
+        while (itF != allfiles.end())
         {
-            file = allfiles[i];
-            descr = file->getDescriptor();
+            //file = allfiles[i];
+            descr = (*itF)->getDescriptor();
             //std::cout << "Check file for read: " << descr << " | status = " << file->getStatus(); //" | path = " << file->getPath() << "\n";
             //if (descr <= 2  || descr > 1024)
             //    exit(0);
@@ -390,41 +463,49 @@ public:
                 if (ret > 0)
                 {
                     //std::cout << "RET = " << ret << "\n";
-                    file->getClient()->setTimer();
+                    (*itF)->getClient()->setTimer();
                     for (int k = 0; k < ret; k++)
                     {
-                        file->getClient()->fillContent(buf[k]);
+                        (*itF)->getClient()->fillContent(buf[k]);
                         //std::cout << "#" << buf[i] << "#";
                         buf[k] = 0;
                     }
+                    itF++;
                 }
                 else if (!ret)
                 {
                     //std::cout << "RET = 0\n";
-                    file->getClient()->setTimer();
+                    (*itF)->getClient()->setTimer();
                     int k = 0;
                     while (buf[k])
                     {
-                        file->getClient()->fillContent(buf[k]);
+                        (*itF)->getClient()->fillContent(buf[k]);
                         //std::cout << "#" << buf[i] << "#";
                         buf[k++] = 0;
                     }
-                    file->getClient()->setStatus(2);
-                    file->getClient()->formAnswer();
-                    file->setStatus(-1);
+                    (*itF)->getClient()->setStatus(2);
+                    (*itF)->getClient()->formAnswer();
+                    (*itF)->setStatus(-1);
                     FD_CLR(descr, &read_current);
-                    removeFile(file);
+                    //removeFile(*itF);
+                    itF = allfiles.erase(itF);
                     //file->getClient()->resetFile(&file);
                 }
-                if (ret < 0)
+                else if (ret < 0)
                 {
                     std::cout << "Pipe read error\n";
-                    removeFile(file);
+                    //removeFile(*itF);
+                    //std::vector<FileUpload *>::iterator toDelete = itF++;
+                    itF = allfiles.erase(itF);
+                    //continue ;
                 }
                 //std::cout << "END HERE\n";
             }
-            else if (file->getStatus() == -1)
-                removeFile(file);
+            else
+                itF++;
+            /*else if ((*itF)->getStatus() == -1)
+                removeFile(*itF);*/
+            //itF++;
         }
         //std::cout << "FInished to read requests\n";
     }
@@ -436,56 +517,91 @@ public:
         // int ret;
         int descr;
         // int len;
-        Client *curclient;
-        FileUpload *file;
-        for (size_t i = 0; i < filesCount(); i++)
+        //Client *curclient;
+        //FileUpload *file;
+        //for (size_t i = 0; i < filesCount(); i++)
+        //for (std::vector<FileUpload *>::iterator it = allfiles.begin(); it != allfiles.end(); it++)
+        std::vector<FileUpload *>::iterator itF = allfiles.begin();
+        while (itF != allfiles.end())
         {
-            file = allfiles[i];
-            descr = file->getDescriptor();
+            //file = allfiles[i];
+            descr = (*itF)->getDescriptor();
             //std::cout << "Check file for write: " << descr << " | status = " << file->getStatus() <<"\n";//" | client = " << file->getClient()->getDescriptor() << "\n";
             //if (descr <= 2 || descr > 1024)
             //        exit(0);
             if (isSetWrite(descr))
             {
-                file->getClient()->setTimer();
+                (*itF)->getClient()->setTimer();
                 //std::cout << descr << "-file is ready for writing\n";
-                file->fileWrite();
+                (*itF)->fileWrite();
             }
-            else if (file->getStatus() == -1)
-                removeFile(file);
+            /*else if ((*itF)->getStatus() == -1)
+                removeFile(*itF);*/
+            itF++;
         }
         
-        for (size_t i = 0; i < clientsCount(); i++)
+        //for (size_t i = 0; i < clientsCount(); i++)
+        //for (std::vector<Client *>::iterator it = allclients.begin(); it != allclients.end(); it++)
+        std::vector<Client *>::iterator itC = allclients.begin();
+        while (itC != allclients.end())
         {
-            curclient = allclients[i];
-            descr = curclient->getDescriptor();
+            //curclient = allclients[i];
+            descr = (*itC)->getDescriptor();
             //std::cout << "Check client for write: " << descr << " | status = " << curclient->getStatus() << "\n";
             if (isSetWrite(descr))
             {
-                curclient->setTimer();
+                (*itC)->setTimer();
                 //std::cout << descr << "-client is ready for answer\n";
-                if (curclient->getStatus() == 4)
-                    curclient->formAnswer();
+                if ((*itC)->getStatus() == 4)
+                    (*itC)->formAnswer();
                 else
                 {
-                    file = curclient->getFileWrite();
+                    /*file = (*itC)->getFileWrite();
                     if (file && (file->getStatus() >= 0))
                     {
                         file->setStatus(-1);
                         removeFile(file);
                     }
-                    file = curclient->getFileRead();
+
+                    file = (*itC)->getFileRead();
                     if (file && (file->getStatus() >= 0))
                     {
                         file->setStatus(-1);
                         removeFile(file);
+                    }*/
+                    if ((*itC)->getFileWrite())// && ((*itC)->getFileWrite()->getStatus() >= 0))
+                        {
+                        //(*itC)->getFileWrite()->setStatus(-2);
+                        //removeFile((*itC)->getFileWrite());
+                        //std::cout << "Removed file " << (*itC)->getFileWrite()->getDescriptor() << "\n";
+                        std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileWrite());
+                        if (itF != allfiles.end())
+                            allfiles.erase(itF);
+                        }
+                    if ((*itC)->getFileRead())// && ((*itC)->getFileRead()->getStatus() >= 0))
+                        {
+                        //(*itC)->getFileRead()->setStatus(-2);
+                        //removeFile((*itC)->getFileRead());
+                        //std::cout << "Removed file " << (*itC)->getFileRead()->getDescriptor() << "\n";
+                        std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileRead());
+                        if (itF != allfiles.end())
+                            allfiles.erase(itF);
+                        }
+
+                    (*itC)->sendResponse();
+                    if ((*itC)->getStatus() < 0)
+                    {
+                        delete (*itC);
+                        itC = allclients.erase(itC);
+                        continue ;
                     }
-                    curclient->sendResponse();
                 }
             }
-            else if (curclient->getStatus() == -1)
-                removeClient(curclient);
+            /*else if ((*itC)->getStatus() == -1)
+                removeClient(*itC);*/
+            itC++;
         }
+        //std::cout << "End answer block\n";
     }
     
     void cleaner()

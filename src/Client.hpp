@@ -21,6 +21,10 @@
 #include "Parser.hpp"
 
 class Client{
+
+public:
+    static int count;
+    static int active;
 private:
     int descriptor;
     std::stringstream buffer;
@@ -57,7 +61,7 @@ private:
     struct timeval timer;
     
 public:
-    Client(Port *port, struct timeval &timeout): fileWrite(0), fileRead(0)
+    Client(Port *port): fileWrite(0), fileRead(0)
     {
         //std::cout << "CLIENT TO PORT " << port->getDescriptor() << "\n";
         sockaddr_in addr;
@@ -65,9 +69,14 @@ public:
         descriptor = accept(port->getDescriptor(), (sockaddr *) &addr, (socklen_t *)&addrLen);
         if (descriptor < 0)
             throw Exception("Client connection exception");
+        /*int reuse = 1;
+        if (setsockopt(descriptor, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
+            throw Exception("Setsockopt(SO_REUSEADDR) exception");
+        if (setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &reuse, sizeof(reuse)) < 0)
+            throw Exception("Setsockopt(SO_NOSIGPIPE) exception");*/
         if (fcntl(descriptor, F_SETFL, O_NONBLOCK) < 0)
             throw Exception("Client fcntl exception");
-        setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        //setsockopt(descriptor, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
         this->port = port;
         requestType = 0;
         requestLen = 0;
@@ -76,12 +85,17 @@ public:
         code = 0;
         keepAlive = false;
         gettimeofday(&timer, 0);
+        ++count;
+        ++active;
     }
     
     ~Client()
     {
+        if (!keepAlive)
+            shutdown(descriptor, SHUT_RDWR);
         close(descriptor);
         reset();
+        --active;
     }
     
     void reset()
@@ -111,9 +125,15 @@ public:
         resetFile(&fileWrite);
         resetFile(&fileRead);
         if (keepAlive)
+        {
             status = 0;
+            //std::cout << "Reset status = 0\n";
+        }
         else
+        {
             status = -1;
+            //std::cout << "Reset status = -1\n";
+        }
     }
     
     int &getDescriptor()
