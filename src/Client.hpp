@@ -402,7 +402,10 @@ public:
             return (true);
         }
         std::string headerTmp = request.substr(pos2, pos - pos2 + 2);
-        
+
+        std::cout << "REQUEST TYPE = " << requestType << "\n";
+        usleep(1000000);
+
         if (requestType == 3)
         {
             if (!remove(path.str().c_str()))
@@ -417,6 +420,7 @@ public:
             }
             status = 2;
             formAnswer();
+            return (false);
         }
         
         /*std::cout << "HEADER REST:\n" << headerTmp << "\nEND\n";
@@ -692,7 +696,11 @@ public:
         int send_size = send(descriptor, response.str().substr(responsePos, responseSize - responsePos).c_str(), responseSize - responsePos, 0);
         //std::cout << "Send returned : " << send_size << "\n";
         if (send_size <= 0)
-            std::cout << "MAY BE ERROR HERE\n";
+        {
+            status = -1;
+            return ;
+            //std::cout << "MAY BE ERROR HERE\n";
+        }
             
         responsePos += send_size - 1;
         if (responsePos == responseSize - 1)

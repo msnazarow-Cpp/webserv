@@ -43,7 +43,7 @@
         echo "PHP: File uploading error";
         return ;
     }
-    $filename2 .= substr($content, $pos, $pos2 - $pos);
+    $filename2 .= str_replace(' ', '_',substr($content, $pos, $pos2 - $pos));
     #echo "FILENAME: " . $filename2;
         
     $pos = strpos($content, "\r\n\r\n", $pos2);

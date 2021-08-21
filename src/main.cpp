@@ -58,35 +58,40 @@ int main (int argc, char *argv[])
     {
         std::cout << "CLIENT TOTAL = " << Client::count << " | ACTIVE: " << Client::active << "\n";
         //std::cout << "Server waiting...\n";
-        server->refillSets();
 
-        int ret = server->selector();
-        //std::cout << "RET = " << ret << "\n";
-        if (ret < 0)
-        {
-            std::cout << ret << ": Select error, skip cycle\n";
-            server->cleaner();
-            //usleep(100000);
-            continue ;
-        }
-        if (!ret)
-        {
+        try {
+            server->refillSets();
+            int ret = server->selector();
+            //std::cout << "RET = " << ret << "\n";
+            if (ret < 0)
+            {
+                std::cout << ret << ": Select error, skip cycle\n";
+                server->cleaner();
+                //usleep(100000);
+                continue ;
+            }
+            if (!ret)
+            {
+                //std::cout << "\nCHECK REMOVALS\n";
+                //server->remove();
+                //std::cout << "SELECT TIMEOUT\n";
+                continue ;
+            }
+            //std::cout << "\nCHECK PORTS\n";
+            server->handleConnections();
+            //std::cout << "\nCHECK CLIENTS\n";
+            server->readRequests();
             //std::cout << "\nCHECK REMOVALS\n";
             //server->remove();
-            //std::cout << "SELECT TIMEOUT\n";
-            continue ;
+            //std::cout << "\nCHECK ANSWERS\n";
+            server->sendAnswer();
+            //std::cout << "\nCHECK REMOVALS\n";
+            //server->remove();
         }
-        //std::cout << "\nCHECK PORTS\n";
-        server->handleConnections();
-        //std::cout << "\nCHECK CLIENTS\n";
-        server->readRequests();
-        //std::cout << "\nCHECK REMOVALS\n";
-        //server->remove();
-        //std::cout << "\nCHECK ANSWERS\n";
-        server->sendAnswer();
-        //std::cout << "\nCHECK REMOVALS\n";
-        //server->remove();
-        
+        catch (const std::bad_alloc& ex)
+        {
+            server->cleaner();
+        }
     }
 }
 

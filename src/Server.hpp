@@ -606,7 +606,7 @@ public:
     
     void cleaner()
     {
-        int descr;
+        /*int descr;
         Client *curclient;
         for (size_t i = 0; i < clientsCount(); i++)
         {
@@ -614,6 +614,13 @@ public:
             descr = curclient->getDescriptor();
             //std::cout << "Check client for clean: " << descr << " | status = " << curclient->getStatus() << "\n";
             curclient->setStatus(-1);
+        }*/
+        allfiles.clear();
+        std::vector<Client *>::iterator it = allclients.begin();
+        while (it != allclients.end())
+        {
+            delete (*it);
+            it = allclients.erase(it);
         }
     }
     
