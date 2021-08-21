@@ -69,6 +69,10 @@ public:
         descriptor = accept(port->getDescriptor(), (sockaddr *) &addr, (socklen_t *)&addrLen);
         if (descriptor < 0)
             throw Exception("Client connection exception");
+        struct linger so_linger;
+        so_linger.l_onoff = true;
+        so_linger.l_linger = 0;
+        setsockopt(descriptor, SOL_SOCKET, SO_LINGER, &so_linger, sizeof (so_linger));
         /*int reuse = 1;
         if (setsockopt(descriptor, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
             throw Exception("Setsockopt(SO_REUSEADDR) exception");
@@ -125,15 +129,9 @@ public:
         resetFile(&fileWrite);
         resetFile(&fileRead);
         if (keepAlive)
-        {
             status = 0;
-            //std::cout << "Reset status = 0\n";
-        }
         else
-        {
             status = -1;
-            //std::cout << "Reset status = -1\n";
-        }
     }
     
     int &getDescriptor()
@@ -320,6 +318,13 @@ public:
             }
         }
 
+        /*if (!keepAlive)
+        {
+            struct linger so_linger;
+            so_linger.l_onoff = true;
+            so_linger.l_linger = 0;
+            setsockopt(descriptor, SOL_SOCKET, SO_LINGER, &so_linger, sizeof (so_linger));
+        }*/
 
         bool isErrorPage, isLegit;
         //isLegit = true;
@@ -641,6 +646,9 @@ public:
         response << "Cache-Control: no-cache, private\r\n";
         response << "Content-Type: text/html\r\n";
         response << "Content-Length: " << content.size() << "\r\n";
+
+        //if (!keepAlive)
+        //    response << "Connection: close\r\n";
         response << "\r\n";
         response << content;
         responseSize = response.str().size() + 1;
