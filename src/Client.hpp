@@ -61,7 +61,7 @@ private:
     struct timeval timer;
     
 public:
-    Client(Port *port): fileWrite(0), fileRead(0)
+    Client(Port *port):/* cgi(),*/ fileWrite(0), fileRead(0)
     {
         //std::cout << "CLIENT TO PORT " << port->getDescriptor() << "\n";
         sockaddr_in addr;
@@ -327,7 +327,7 @@ public:
         }*/
 
         bool isErrorPage, isLegit;
-        //isLegit = true;
+        isLegit = true; //TODO У тебя isLegit остовалось неинициализированным
         path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code);
         //std::cout << "CGI = " << cgi << "\n";
         if (!isLegit || isErrorPage)

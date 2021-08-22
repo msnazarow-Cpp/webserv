@@ -40,7 +40,7 @@ bool ServerBlock::createDirs()
     mkdir(tmp, 0777);
     struct stat info;
 
-    if(!(!stat(tmp, &info) && (info.st_mode & S_IFDIR))) //TODO что именно тут происходит?
+    if(!(!stat(tmp, &info) && (info.st_mode & S_IFDIR)))
         return (false);
     
     uploadDir = root + "/uploads";
@@ -79,5 +79,5 @@ std::string ServerBlock::getBuffer()
 }
 
 ServerBlock::ServerBlock()
-        :status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(){
+        :status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(),autoindex(){
 }

@@ -24,7 +24,11 @@ enum Status{
     waitForLocationParams,
     waitForMethod,
     waitForAutoIndex,
-    waitForCgi
+    waitForCgi,
+    waitForRootClientMaxBodySize,
+    waitForLocationClientMaxBodySize,
+    waitForErrorPageNumber,
+    waitForErrorPage
 };
 class ServerBlock
 {
@@ -49,6 +53,7 @@ private:
     std::vector<std::string>index;
     std::string bufferDir;
     std::string uploadDir;
+    bool autoindex;
     friend bool operator ==(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator !=(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator <(const ServerBlock& lhs, const ServerBlock& rhs);

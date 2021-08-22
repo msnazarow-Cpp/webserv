@@ -27,16 +27,16 @@ int Client::count = 0;
 int Client::active = Client::count;
 int main (int argc, char *argv[])
 {
-    char *arg; //TODO Что тут происходит - непонятно ?
+    char *arg;
     if (argc == 1)
     {
-        std::string tmp("./default.conf");
+        std::string tmp("./default.conf"); //TODO Зачем здесь переменная если она нигде не используется?
         arg = const_cast<char *>(tmp.c_str());
         struct stat info;
         if(!(!stat(arg, &info) && !S_ISDIR(info.st_mode)))
         {
             std::cout << "Please, provide config-file as argument or place 'default.conf' near executable." << std::endl;
-            return (-1);
+            exit(2); //TODO  Чтобы санитайзеры не регистрировали утечку, используй exit для завершения программы, а не return
         }
     }
     else
@@ -51,7 +51,7 @@ int main (int argc, char *argv[])
         server->setParser(parser);
     } catch (Exception &e) {
         std::cout << e.what() << std::endl << "Exception during config parsing. Server stopped." << std::endl;
-        return (-1);
+        exit (1);
     }
 
     while (1)

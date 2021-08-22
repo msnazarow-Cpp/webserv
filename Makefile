@@ -14,17 +14,19 @@ HFLAGS		= '-pedantic -Wshadow -Wformat=2 -Wfloat-equal\
 	-Wlogical-op -Wshift-overflow=2 -Wduplicated-cond -Wcast-qual -Wcast-align\
 	-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_FORTIFY_SOURCE=2\
 	-fsanitize=undefined -fno-sanitize-recover -fstack-protector\
-	-Wno-pointer-arith -Wno-cast-qual -Wno-unused-result'
+	-Wno-pointer-arith -Wno-cast-qual -Wno-unused-result -Wimplicit-fallthrough'
 else
 HFLAGS		= '-pedantic -Wshadow -Wformat=2 -Wfloat-equal\
 	-Wshift-overflow -Wcast-qual -Wcast-align\
 	-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -D_FORTIFY_SOURCE=2\
 	-fsanitize=undefined -fno-sanitize-recover=all -fstack-protector\
-	-Wno-pointer-arith -Wno-cast-qual -Wno-unused-result'
+	-Wno-pointer-arith -Wno-cast-qual -Wno-unused-result -Wimplicit-fallthrough'
 endif
 MAKEFLAGS	= --no-print-directory
-OBJ 		:= main.o Parser.o ServerBlock.o Location.o
+OBJ 		:= main.o Parser.o ServerBlock.o Location.o IndexHtmlMaker.o
 OBJ 		:= $(addprefix obj/,$(OBJ))
+TEST_OBJ	:= test.o IndexHtmlMaker.o
+TEST_OBJ 	:= $(addprefix obj/,$(TEST_OBJ))
 D_FILES 	= $(OBJ:.o=.d)
 NAME 		= webserv
 INCLUDES 	= -I$(PWD) -I$(PWD)/src
@@ -34,8 +36,8 @@ ifeq ($(UNAME), Linux)
 	CFLAGS += -D LINUX=1
 endif
 
-test:
-
+test: DIR $(TEST_OBJ)
+	$(CXX) $(LDFLAGS) $(TEST_OBJ) $(INCLUDES) -o test
 
 bonus:
 	make make='make bonus' CPPFLAGS+=$(BFLAGS) LDFLAGS+=$(BFLAGS) all
@@ -47,6 +49,7 @@ DIR :
 
 $(NAME): $(OBJ) 
 	$(CXX) $(LDFLAGS) $(OBJ) $(INCLUDES) -o $(NAME)
+
 obj/%.o : src/%.cpp
 	$(CXX) $(CPPFLAGS) -c $(INCLUDES) $< -o $@
 

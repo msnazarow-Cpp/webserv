@@ -34,8 +34,12 @@ public:
         int reuse = 1;
         if (setsockopt(descriptor, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0)
             throw Exception("Setsockopt(SO_REUSEADDR) exception");
+#ifdef __APPLE__
         if (setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &reuse, sizeof(reuse)) < 0)
             throw Exception("Setsockopt(SO_NOSIGPIPE) exception");
+#else
+        signal(SIGPIPE, SIG_IGN);
+#endif
         if (bind(descriptor, (sockaddr *)&addr, sizeof(addr)) < 0)
             throw Exception("Bind to port/ip exception");
         if (listen(descriptor, SOMAXCONN) < 0)

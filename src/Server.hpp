@@ -1,6 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
-#define BUFFERSIZE 1024*1024*10 //TODO был слишком медленный
+#define BUFFERSIZE 1024*1024*10
 #define TIMEOUT 120
 #include <sys/select.h>
 #include <iostream>
@@ -190,7 +190,7 @@ public:
     
     int selector()
     {
-        return (select(getLastSock() + 1, &read_current, &write_current, NULL, &timeout));
+        return (select(getLastSock() + 1, &read_current, &write_current, NULL, NULL)); //TODO Плохо работает с time
     }
     
     void addPort(Port *port)
@@ -574,18 +574,18 @@ public:
                         //(*itC)->getFileWrite()->setStatus(-2);
                         //removeFile((*itC)->getFileWrite());
                         //std::cout << "Removed file " << (*itC)->getFileWrite()->getDescriptor() << "\n";
-                        std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileWrite());
-                        if (itF != allfiles.end())
-                            allfiles.erase(itF);
+                        std::vector<FileUpload *>::iterator itDelete = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileWrite()); //TODO Пожалуйста(!) Давай нармальные имена переменным
+                        if (itDelete != allfiles.end())
+                            allfiles.erase(itDelete);
                         }
                     if ((*itC)->getFileRead())// && ((*itC)->getFileRead()->getStatus() >= 0))
                         {
                         //(*itC)->getFileRead()->setStatus(-2);
                         //removeFile((*itC)->getFileRead());
                         //std::cout << "Removed file " << (*itC)->getFileRead()->getDescriptor() << "\n";
-                        std::vector<FileUpload *>::iterator itF = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileRead());
-                        if (itF != allfiles.end())
-                            allfiles.erase(itF);
+                        std::vector<FileUpload *>::iterator itDelete = std::find(allfiles.begin(), allfiles.end(), (*itC)->getFileRead());
+                        if (itDelete != allfiles.end())
+                            allfiles.erase(itDelete);
                         }
 
                     (*itC)->sendResponse();

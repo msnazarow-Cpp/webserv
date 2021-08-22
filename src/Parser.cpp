@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "Parser.hpp"
 #include "Extention.hpp"
+#include "IndexHtmlMaker.hpp"
 #include <sys/stat.h>
 #ifndef IP
     #define IP "localhost"
@@ -35,6 +36,7 @@ Parser::Parser(char *confFileName, Server *server) {
     std::stringstream lines;
     std::string str;
     ServerBlock tmp;
+    size_t ret;
     Location loc;
     if (file.fail()){
         std::cout << "WARRIES" << std::endl;
@@ -96,6 +98,10 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForServerIndex;
                     } else if (str == "location"){
                         tmp.status = waitForLocation;
+                    } else if (str == "error_page"){
+                        tmp.status = waitForErrorPageNumber;
+                    } else if (str == "client_max_body_size"){
+                        tmp.status = waitForRootClientMaxBodySize;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -116,6 +122,8 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForAutoIndex;
                     } else if (str == "cgi_pass") {
                         tmp.status = waitForCgi;
+                    } else if (str == "client_max_body_size"){
+                        tmp.status = waitForLocationClientMaxBodySize;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -128,7 +136,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         str.erase(str.end() - 1);
                     }
                     char *check;
-                    size_t ret = strtol(str.c_str(), &check, 10);
+                    ret = strtol(str.c_str(), &check, 10);
                     if (check == str.c_str() + str.size())
                         tmp.listen.insert(ret);
                     else{
@@ -234,6 +242,56 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     loc.cgi_pass = str;
                 }
+                    break;
+                case waitForLocationClientMaxBodySize: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForLocationParams;
+                        str.erase(str.end() - 1);
+                    }
+                    char *check;
+                    ret = strtol(str.c_str(), &check, 10);
+                    if (check == str.c_str() + str.size())
+                        loc.client_max_body_size = ret;
+                    else{
+                        throw ParserNotValidException();
+                    }
+                    break;
+                }
+                case waitForRootClientMaxBodySize: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    char *check;
+                    ret = strtol(str.c_str(), &check, 10);
+                    if (check == str.c_str() + str.size())
+                        tmp.client_max_body_size = ret;
+                    else{
+                        throw ParserNotValidException();
+                    }
+                    break;
+                }
+                case waitForErrorPageNumber: {
+                    char *check;
+                    ret = strtol(str.c_str(), &check, 10);
+                    if (check == str.c_str() + str.size()) {
+                        tmp.error_page[ret];
+                        tmp.status = waitForErrorPage;
+                    } else{
+                        throw ParserNotValidException();
+                    }
+                    break;
+                }
+                case waitForErrorPage: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    tmp.error_page[ret] = str;
+                }
             }
             if (str == ";")
             {
@@ -285,17 +343,38 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                 {
                     isErrorPage = true;
                     code = 404;
+                    if (block.error_page.count(404)){
+                        return (block.root + '/' + block.error_page[404]);
+                    }
                     return "404";
                 }
-                if (S_ISDIR(statbuf.st_mode))
+                if (S_ISDIR(statbuf.st_mode)){
+                    if (request[request.size() - 1] != '/')
+                        request.push_back('/');
                     for (size_t k = 0; k < loc.index.size(); ++k) {
                         if((out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code)) != "404"){
                             isErrorPage = false;
                             return (out);
                         }
+                        if (loc.autoindex){
+                            try{
+                                return (IndexHtmlMaker::makeIndexFile(loc.root, request));
+                            } catch (...){
+                                return "505";
+                            }
+                        } else {
+                            code = 403;
+                            isErrorPage = true;
+                            if (block.error_page.count(403)){
+                                return block.root + '/' + block.error_page[403];
+                            }
+                            else
+                                return "403";
+                        }
                     }
+                }
                 isErrorPage = false;
-                cgi = loc.getCgiPath();
+                cgi = loc.cgi_pass; // зачем тут геттер?
                 //std::cout << "loc methods count = " << loc.methods.size() << "\n";
                 switch (requestType) {
                     case 0:{
@@ -347,19 +426,34 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
         {
             isErrorPage = true;
             code = 404;
+            if (block.error_page.count(404)){
+                return (block.root + '/' + block.error_page[404]);
+            }
             return "404";
         }
-        if (S_ISDIR(statbuf.st_mode))
-        {
+        if (S_ISDIR(statbuf.st_mode)){
+            if (request[request.size() - 1] != '/')
+                request.push_back('/');
             for (size_t k = 0; k < block.index.size(); ++k) {
                 if((out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code)) != "404"){
                     isErrorPage = false;
                     return (out);
                 }
             }
-            isErrorPage = true;
+            if (block.autoindex){
+                try {
+                    return (IndexHtmlMaker::makeIndexFile(block.root, request));
+                } catch (...) {
+                    return ("505");
+                }
+            }
             code = 403;
-            return ("403");
+            isErrorPage = true;
+            if (block.error_page.count(403)){
+                return block.root + '/' + block.error_page[403];
+            }
+            else
+                return "403";
         }
         isErrorPage = false;
         return (out);
