@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include "Parser.hpp"
-#include "Extention.hpp"
 #include "IndexHtmlMaker.hpp"
 #include <sys/stat.h>
 #ifndef IP
@@ -21,6 +20,15 @@ bool Parser::check_block(ServerBlock &block) {
             }
             for (size_t j = 0; j < block.index.size(); ++j) {
                 block.locations[i].index.push_back(block.index[j]);
+            }
+            if (block.locations[i].autoindex == nil) {
+                block.locations[i].autoindex = block.autoindex;
+            }
+            if (block.locations[i].client_max_body_size == (size_t)-1) {
+                block.locations[i].client_max_body_size = block.client_max_body_size;
+            }
+            if (block.locations[i].methods.empty()) {
+                block.locations[i].methods = block.methods;
             }
         }
     } else {
@@ -102,6 +110,14 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForErrorPageNumber;
                     } else if (str == "client_max_body_size"){
                         tmp.status = waitForRootClientMaxBodySize;
+                    } else if (str == "autoindex"){
+                        tmp.status = waitForRootAutoIndex;
+                    } else if (str == "method"){
+                        tmp.status = waitForRootMethod;
+                    } else if (str == "try_files"){
+                        tmp.status = waitForServerTryFiles;
+                    } else if (str == "uploads_directory"){
+                        tmp.status = waitForUploadsDirectory;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -117,13 +133,15 @@ Parser::Parser(char *confFileName, Server *server) {
                     } else if (str == "index"){
                         tmp.status = waitForLocationIndex;
                     } else if (str == "method"){
-                        tmp.status = waitForMethod;
+                        tmp.status = waitForLocationMethod;
                     } else if (str == "autoindex"){
-                        tmp.status = waitForAutoIndex;
+                        tmp.status = waitForLocationAutoIndex;
                     } else if (str == "cgi_pass") {
                         tmp.status = waitForCgi;
                     } else if (str == "client_max_body_size"){
                         tmp.status = waitForLocationClientMaxBodySize;
+                    } else if (str == "try_files"){
+                        tmp.status = waitForLocationTryFiles;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -174,7 +192,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     else {
                         if (str[str.size() - 1] == ';'){
                             tmp.status = waitForLocationParams;
-                            loc.root = str.substr(0,str.size() - 1).c_str();
+                            loc.root = str.substr(0,str.size() - 1);
                         } else {
                             loc.root = str;
                         }
@@ -199,7 +217,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     loc.index.push_back(str);
                     break;
                 }
-                case waitForMethod : {
+                case waitForLocationMethod : {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForLocationParams;
@@ -219,16 +237,51 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     break;
                 }
-                case waitForAutoIndex: {
+                case waitForRootMethod : {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    if (str == "GET"){
+                        tmp.methods.insert(GET);
+                        //std::cout << "GET INSERTED\n";
+                    }else if (str == "POST") {
+                        tmp.methods.insert(POST);
+                        //std::cout << "POST INSERTED\n";
+                    } else if (str == "DELETE") {
+                        tmp.methods.insert(DELETE);
+                        //std::cout << "DELETE INSERTED\n";
+                    } else {
+                        throw ParserNotValidException();
+                    }
+                    break;
+                }
+                case waitForLocationAutoIndex: {
                     if (str[str.size() - 1] == ';')
                     {
                         tmp.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     if ( str == "on" ){
-                        loc.autoindex = true;
+                        loc.autoindex = static_cast<boolPlusNil>(true);
                     } else if ( str == "off"){
-                        loc.autoindex = false;
+                        loc.autoindex = static_cast<boolPlusNil>(false);
+                    } else {
+                        throw ParserNotValidException();
+                    }
+                    break;
+                }
+                case waitForRootAutoIndex: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    if ( str == "on" ){
+                        tmp.autoindex = static_cast<boolPlusNil>(true);
+                    } else if ( str == "off"){
+                        tmp.autoindex = static_cast<boolPlusNil>(false);
                     } else {
                         throw ParserNotValidException();
                     }
@@ -291,6 +344,34 @@ Parser::Parser(char *confFileName, Server *server) {
                         str.erase(str.end() - 1);
                     }
                     tmp.error_page[ret] = str;
+                    break;
+                }
+                case waitForServerTryFiles: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForLocationParams;
+                        str.erase(str.end() - 1);
+                    }
+                    tmp.try_files.push_back(str);
+                    break;
+                }
+                case waitForLocationTryFiles: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForLocationParams;
+                        str.erase(str.end() - 1);
+                    }
+                    loc.try_files.push_back(str);
+                    break;
+                }
+                case waitForUploadsDirectory: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    tmp.uploads_directory = str;
+                    break;
                 }
             }
             if (str == ";")
@@ -339,8 +420,15 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
             hasEnding(request, loc.location[1]))){
                 out = loc.root + request;
-                if (stat(out.c_str(), &statbuf))
-                {
+                if (stat(out.c_str(), &statbuf)) {
+                    for (size_t k = 0; k < loc.try_files.size(); ++k) {
+                        if (hasEnding(request, loc.try_files[k]))
+                            break;
+                        out = getfilename(server_name, port, request + loc.try_files[k], isErrorPage, cgi, isLegit, requestType, code);
+                        if (code != 404) {
+                            return (out);
+                        }
+                    }
                     isErrorPage = true;
                     code = 404;
                     if (block.error_page.count(404)){
@@ -352,7 +440,8 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     if (request[request.size() - 1] != '/')
                         request.push_back('/');
                     for (size_t k = 0; k < loc.index.size(); ++k) {
-                        if((out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code)) != "404"){
+                        out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code);
+                        if(code != 404) {
                             isErrorPage = false;
                             return (out);
                         }
@@ -424,6 +513,12 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
         out = block.root + request;
         if (stat(out.c_str(), &statbuf))
         {
+            for (size_t k = 0; k < block.try_files.size(); ++k) {
+                out = getfilename(server_name, port, request + block.try_files[k], isErrorPage, cgi, isLegit, requestType, code);
+                if (code != 404) {
+                    return (out);
+                }
+            }
             isErrorPage = true;
             code = 404;
             if (block.error_page.count(404)){
@@ -435,7 +530,10 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             if (request[request.size() - 1] != '/')
                 request.push_back('/');
             for (size_t k = 0; k < block.index.size(); ++k) {
-                if((out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code)) != "404"){
+                if (hasEnding(request,block.try_files[i]))
+                    break;
+                out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code);
+                if(code != 404){
                     isErrorPage = false;
                     return (out);
                 }

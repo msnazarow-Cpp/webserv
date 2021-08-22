@@ -55,7 +55,7 @@ bool ServerBlock::createDirs()
 void ServerBlock::fillPorts(Server *server)
 {
     Port *newport;
-    for (std::set<int>::iterator it = listen.begin(); it != listen.end(); it++)
+    for (std::set<size_t>::iterator it = listen.begin(); it != listen.end(); it++)
     {
         newport = server->hasPort(*it);
         if (!newport)

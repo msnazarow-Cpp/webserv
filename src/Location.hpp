@@ -12,18 +12,24 @@ enum Method{
     POST,
     DELETE
 };
+enum boolPlusNil{
+    True = true,
+    False = false,
+    nil
+};
 struct Location{
     std::vector<std::string> location;
     std::string root;
     std::vector<std::string> index;
-    bool autoindex;
+    boolPlusNil autoindex;
     size_t client_max_body_size;
     std::string fastcgi_pass;
     std::string fastcgi_params;
     std::set<Method> methods;
     std::string cgi_pass;
+    std::vector<std::string> try_files;
     friend std::ostream& operator<<(std::ostream &os, const Location& d);
-    Location(): location(), root(), index(), autoindex(false), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(){}
+    Location(): location(), root(), index(), autoindex(nil), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(){}
     std::string getCgiPath();
 };
 std::ostream& operator<<(std::ostream &os, const Location& d);
