@@ -44,6 +44,8 @@ public:
     void fillPorts(Server *server);
     std::string getRoot();
     std::string getBuffer();
+    std::string getErrorPage(size_t val);
+    std::string getUploadsDir();
 
 private:
 

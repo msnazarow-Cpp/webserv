@@ -30,7 +30,7 @@ int main (int argc, char *argv[])
     char *arg;
     if (argc == 1)
     {
-        std::string tmp("./default.conf"); //TODO Зачем здесь переменная если она нигде не используется?
+        std::string tmp("./default.conf"); //TODO Зачем здесь переменная если она нигде не используется? - ниже используется
         arg = const_cast<char *>(tmp.c_str());
         struct stat info;
         if(!(!stat(arg, &info) && !S_ISDIR(info.st_mode)))
@@ -53,7 +53,11 @@ int main (int argc, char *argv[])
         std::cout << e.what() << std::endl << "Exception during config parsing. Server stopped." << std::endl;
         exit (1);
     }
-
+    if (!parser->getBlocksCount())
+    {
+        std::cout << "There are no active servers. Program stopped." << std::endl;
+        exit (1);
+    }
     while (1)
     {
         std::cout << "CLIENT TOTAL = " << Client::count << " | ACTIVE: " << Client::active << "\n";

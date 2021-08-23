@@ -43,8 +43,11 @@ bool ServerBlock::createDirs()
     if(!(!stat(tmp, &info) && (info.st_mode & S_IFDIR)))
         return (false);
     
-    uploadDir = root + "/uploads";
-    const char *tmp2 = uploadDir.c_str();
+    //uploadDir = root + "/uploads";
+    //const char *tmp2 = uploadDir.c_str();
+
+    const char *tmp2 = (root + uploads_directory).c_str();
+    //std::cout << "DIR: " << tmp2 << "\n";
     mkdir(tmp2, 0777);
 
     if(!(!stat(tmp2, &info) && (info.st_mode & S_IFDIR)))
@@ -80,4 +83,16 @@ std::string ServerBlock::getBuffer()
 
 ServerBlock::ServerBlock()
         :status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(),autoindex(){
+}
+
+std::string ServerBlock::getErrorPage(size_t val)
+{
+    std::map<size_t, std::string>::iterator result = error_page.find(val);
+    if (result == error_page.end())
+        return ("");
+    return (root + "/" + result->second);
+}
+
+std::string ServerBlock::getUploadsDir(){
+    return (uploads_directory);
 }

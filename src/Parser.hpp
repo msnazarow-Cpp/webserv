@@ -22,7 +22,8 @@ public:
     class ParserNotValidException:std::exception{};
     Parser(char *confFileName, Server *server);
     static bool check_block(ServerBlock & block);
-    std::string getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code);
+    std::string getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code, int &maxSize);
+    size_t getBlocksCount();
 };
 
 
