@@ -1,7 +1,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 #define BUFFERSIZE 1024*1024*10
-#define TIMEOUT 5
+#define TIMEOUT 120
 #include <sys/select.h>
 #include <iostream>
 #include <vector>
@@ -112,7 +112,7 @@ public:
                 else if ((*itC)->getFileWrite()->getStatus() == -2)
                     (*itC)->setStatus(-1);
             }
-            if ((*itC)->getStatus() == 2 || (*itC)->getStatus() == 4 || (*itC)->getStatus() == -2)
+            if ((*itC)->getStatus() == 2 || (*itC)->getStatus() == 4)// || (*itC)->getStatus() == -2)
                 FD_SET((*itC)->getDescriptor(), &write_current);
             itC++;
         }
@@ -122,7 +122,15 @@ public:
         {
             if ((*itF)->getStatus() < 0)
             {
-                itF = allfiles.erase(itF);
+                if ((*itF)->getStatus() == -2)
+                {
+                    Client *curclient = (*itF)->getClient();
+                    itF = allfiles.erase(itF);
+                    curclient->finishPipe();
+                    curclient->handleErrorPage(500);
+                }
+                else
+                    itF = allfiles.erase(itF);
                 continue ;
             }
             if (!(*itF)->getStatus())
@@ -281,7 +289,7 @@ public:
             {
                 //std::cout << descr << "-client is readable\n";
                 ret = recv(descr, buf, BUFFERSIZE, 0);
-                //std::cout << descr << ": Ret = " << ret << "\n";
+                std::cout << descr << ": Ret = " << ret << "\n";
                 if (ret > 0)
                 {
                     (*itC)->setTimer();

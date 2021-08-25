@@ -10,7 +10,8 @@
 enum Method{
     GET,
     POST,
-    DELETE
+    DELETE,
+    PUT
 };
 enum boolPlusNil{
     True = true,

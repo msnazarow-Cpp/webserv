@@ -30,7 +30,7 @@ public:
 private:
     int descriptor;
     std::stringstream buffer;
-    
+
     std::ostringstream response;
     int responseSize;
     int responsePos;
@@ -43,6 +43,7 @@ private:
     int requestType;
     std::stringstream path;
     std::string target;
+    bool requestIsChunked;
     
     std::map<std::string, std::string> envs;
     std::string requestProtocol;
@@ -62,7 +63,9 @@ private:
 
     struct timeval timer;
     ServerBlock *s_block;
-    
+
+
+    bool fromCgi;
 public:
     Client(Port *port):/* cgi(),*/ fileWrite(0), fileRead(0)
     {
@@ -95,12 +98,14 @@ public:
         ++count;
         ++active;
         s_block = 0;
+        requestIsChunked = false;
+        fromCgi = false;
     }
     
     ~Client()
     {
-        if (!keepAlive)
-            shutdown(descriptor, SHUT_RDWR);
+        //if (!keepAlive)
+        //    shutdown(descriptor, SHUT_RDWR);
         close(descriptor);
         reset();
         --active;
@@ -108,7 +113,7 @@ public:
     
     void reset()
     {
-        //std::cout << "COMPLETE RESET\n";
+        std::cout << "COMPLETE RESET of " << descriptor << "\n";
         buffer.str("");
         response.str("");
         path.str("");
@@ -121,14 +126,20 @@ public:
         requestBuffer.clear();
         requestBoundary.clear();
         requestType = 0;
-        
+        requestIsChunked = false;
         envs.clear();
         
         
         responseSize = 0;
         responsePos = 0;
         code = 0;
-        
+
+
+        //if (fromCgi)
+        //    keepAlive = true;
+        fromCgi = false;
+
+
         s_block = 0;
         resetFile(&fileWrite);
         resetFile(&fileRead);
@@ -201,6 +212,18 @@ public:
     void fillErrorContent(int code)
     {
         switch (code){
+            case 100:{
+                content = "<h1>100: Continue</h1>";
+                break;
+            }
+            case 202:{
+                content = "<h1>202: Accepted</h1>";
+                break;
+            }
+            case 204:{
+                content = "<h1>204: No content</h1>";
+                break;
+            }
             case 400:{
                 content = "<h1>400: Bad request</h1>";
                 break;
@@ -229,8 +252,16 @@ public:
                 content = "<h1>411: Length required</h1>";
                 break;
             }
+            case 422:{
+                content = "<h1>422: Unprocessable entity</h1>";
+                break;
+            }
             case 500:{
                 content = "<h1>500: Internal server error</h1>";
+                break;
+            }
+            case 501:{
+                content = "<h1>501: Not implemented</h1>";
                 break;
             }
         }
@@ -238,17 +269,18 @@ public:
 
     bool handleErrorPage(int code)//, ServerBlock *block)
     {
-        std::cout << "Handle error\n";
+        //std::cout << "Handle error\n";
         if (!s_block)
         {
             status = -1;
             return (true);
         }
+        if (code == 100 || code == 204 || code == 405)
+            keepAlive = true;
         std::string error = s_block->getErrorPage(code);
-        std::cout << "Error: " << error << "\n";
+        //std::cout << "Error: " << error << "\n";
         if (error.empty())
         {
-
             fillErrorContent(code);
             status = 2;
             formAnswer();
@@ -256,7 +288,7 @@ public:
         else
         {
             try{
-                fileRead = new FileUpload(error, 0, "", this, true);
+                fileRead = new FileUpload(error, 0, "", this, true);//, false);
                 fileRead->setStatus(2);
                 status = 6;
             }catch(Exception &e){
@@ -268,13 +300,13 @@ public:
         return (false);
     }
 
-    bool parseHeader(std::string const &request, Parser *parser)//std::map<std::string, ServerBlock>::iterator &result, Parser *parser)
+    bool parseHeader(std::string &request, Parser *parser)//std::map<std::string, ServerBlock>::iterator &result, Parser *parser)
     {
         size_t pos;
         size_t pos2;
         //std::cout << "PARSE HEADER\n";
-        //std::cout << "PARSE HEADER\nREQUEST:\n" << request << "\nEND\n";
-        if (requestType == 1)
+        std::cout << "PARSE HEADER\nREQUEST:\n" << request.substr(0, 500) << "\nEND\n";
+        if (requestType == 1 || requestType == 4)
             pos = 4;
         else if (requestType == 2)
             pos = 5;
@@ -283,6 +315,7 @@ public:
         else
         {
             //content = "Wrong request type";
+            std::cout << "Wrong request type\n";
             code = 405;
             return (handleErrorPage(code));//, &(result->second)));
             //return (false);
@@ -313,17 +346,17 @@ public:
         else
             envs.insert(std::pair<std::string, std::string>("QUERY_STRING", ""));
             //requestQuery = "";
-        
+
         //std::cout << "QUERY_STRING: #" << envs["QUERY_STRING"] << "#\n";
-        
-        
+
+
         //std::cout << "Target: " << target << " | Path: ";
         path.str("");
         /*if (target == "/")
             target = "/index.html";
         path << result->second->getRoot() << target;
         std::cout << path.str() << "\n";*/
-        
+
         //PROTOCOL
         pos2++;
         pos = request.find("\r\n", pos2);
@@ -337,11 +370,11 @@ public:
         }
         requestProtocol = request.substr(pos2, pos - pos2);
         //std::cout << "Request protocol: " << requestProtocol << "\n";
-        
+
         //END FOR GET (without session)
         /*if (requestType == 1)
             return (false);*/
-        
+
         //HOSTNAME
         pos += 2;
         pos2 = request.find("Host: ", pos);
@@ -367,7 +400,7 @@ public:
         std::string requestHost = request.substr(pos2, pos - pos2);
         envs.insert(std::pair<std::string, std::string>("SERVER_NAME", requestHost));
         //std::cout << "Request host: " << envs["SERVER_NAME"] << "\n";
-        
+
         //PORT
         pos++;
         pos2 = request.find("\r\n", pos);
@@ -395,13 +428,22 @@ public:
             pos += 12;
             pos2 = request.find("\r\n", pos);
             if (pos2 == std::string::npos)
+            {
                 keepAlive = false;
+                envs["HTTP_CONNECTION"] = "close";
+            }
             else
             {
                 if ((!request.compare(pos, pos2 - pos, "keep-alive")))
+                {
                     keepAlive = true;
+                    envs["HTTP_CONNECTION"] = "keep-alive";
+                }
                 else
+                {
                     keepAlive = false;
+                    envs["HTTP_CONNECTION"] = "close";
+                }
             }
         }
 
@@ -413,72 +455,40 @@ public:
             setsockopt(descriptor, SOL_SOCKET, SO_LINGER, &so_linger, sizeof (so_linger));
         }*/
 
-        bool isErrorPage, isLegit;
-        isLegit = true; //TODO У тебя isLegit остовалось неинициализированным - оно пока и не должно быть инициализированным, ему значение задается при вызове getfilename
+        /*if (requestType == 4 && status == 1)
+        {
+            status = 10;
+            std::cout << "STATUS SET TO 10\n";
+            chunkSize = 0;
+            return (false);
+        }*/
+    //if (requestType == 4)
+    //    return (true);
+        bool isErrorPage = false, isLegit = true;
         int maxSize = -1;
-        path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize);
-        //std::cout << "CGI = " << cgi << "\nPATH = " << path.str() << "\n";
+
+
+
+        size_t i = 0;
+        for (i = 0; i < target.size(); i++)
+        {
+            if (target[i] != '/')
+                break ;
+        }
+        if (i > 1)
+        {
+            std::string tmp = target.substr(i - 1, target.size() + 1 - i);
+            target = tmp;
+        }
+
+        path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked);
+
+        std::cout << "CGI = " << cgi << "\nPATH = " << path.str() << "\n";
+        std::cout << "Legit = " << isLegit << " | Error = " << isErrorPage << "\n";
         if (!isLegit || isErrorPage)
         {
-            /*std::ifstream f(path.str().c_str());
-            if (f.good())
-            {
-                std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-                content = str;
-            }
-            else*/
-            /*try{
-                fileRead = new FileUpload(path.str(), 0, "", this, true);
-                fileRead->setStatus(2);
-                status = 6;
-            }catch(Exception &e){
-                switch (code){
-                    case 400:{
-                        content = "<h1>400: Bad request</h1>";
-                        break;
-                    }
-                    case 403:{
-                        content = "<h1>403: Access forbidden</h1>";
-                        break;
-                    }
-                    case 404:{
-                        content = "<h1>404: Not Found</h1>";
-                        break;
-                    }
-                    case 405:{
-                        content = "<h1>405: Request type not allowed</h1>";
-                        break;
-                    }
-                }
-                status = 2;
-                formAnswer();
-            }*/
-            /*{
-                switch (code){
-                    case 400:{
-                        content = "<h1>400: Bad request</h1>";
-                        break;
-                    }
-                    case 403:{
-                        content = "<h1>403: Access forbidden</h1>";
-                        break;
-                    }
-                    case 404:{
-                        content = "<h1>404: Not Found</h1>";
-                        break;
-                    }
-                    case 405:{
-                        content = "<h1>405: Request type not allowed</h1>";
-                        break;
-                    }
-                }
-            }*/
-            //f.close();
-            //std::cout << "\nADDRESS IS: " << path.str() << "\n";
-            //status = 2;
-            //formAnswer();
-            //return (false);
-            return (handleErrorPage(code));//, &(result->second)));
+            std::cout << "CODE = " << code << "\n";
+            return (handleErrorPage(code));
         }
 
         
@@ -491,10 +501,7 @@ public:
             return (true);*/
             return (handleErrorPage(code));//, &(result->second)));
         }
-        std::string headerTmp = request.substr(pos2, pos - pos2 + 2);
 
-        //std::cout << "REQUEST TYPE = " << requestType << "\n";
-        //usleep(1000000);
 
         if (requestType == 3)
         {
@@ -511,48 +518,83 @@ public:
                 code = 404;
                 return (handleErrorPage(code));//, &(result->second)));
             }
-            /*status = 2;
-            formAnswer();
-            return (false);*/
         }
-        
-        /*std::cout << "HEADER REST:\n" << headerTmp << "\nEND\n";
-        pos2 = 0;
+        else if (requestType == 2 && !requestBodySize && !requestIsChunked)
+        {
+            code = 204;
+            return (handleErrorPage(code));
+        }
+        std::string headerTmp = request.substr(pos2, pos - pos2 + 2);
+        std::cout << "HEADER REST:\n" << headerTmp << "\nEND\n";
+        pos2 = 2;
         while ((pos3 = headerTmp.find("\r\n", pos2)) != std::string::npos)
         {
             pos = headerTmp.find(": ", pos2);
             if (pos == std::string::npos)
             {
-                std::cout << "Wrong request header: " << pos2 << " - " << pos3 << "\n";
-                status = -1;
-                return (true);
+                code = 400;
+                return (handleErrorPage(code));
             }
-            std::string t1 = headerTmp.substr(pos2, pos - pos2);
-            //std::string t2 = headerTmp.substr(pos + 2, pos3 - pos - 2);
-            //std::cout << "KEY: " << t1 << " | VALUE: " << t2 << "\n";
+            std::string t1 = "HTTP_" + headerTmp.substr(pos2, pos - pos2);
+            std::string t2 = headerTmp.substr(pos + 2, pos3 - pos - 2);
+
             std::transform(t1.begin(), t1.end(), t1.begin(), ::toupper);
             size_t pos4 = t1.find("-");
             if (pos4 != std::string::npos)
                 t1[pos4] = '_';
+            std::cout << "KEY: " << t1 << " | VALUE: " << t2 << "\n";
             envs[t1] = headerTmp.substr(pos + 2, pos3 - pos - 2);
             pos2 = pos3 + 2;
-        }*/
+        }
         
         //envs.insert(std::pair<std::string, std::string>("SERVER_PROTOCOL", requestProtocol));
+
+
+        /*std::string directory("");
+        size_t posCur = 0, posLast = 0, posMiddle = 0;
+        while ((posCur = target.find("/", posLast)) != std::string::npos)
+            posLast = posCur + 1;
+        if (posLast)
+        {
+            posCur = 0;
+            //std::cout << "HERE3\n";
+            while ((posCur = target.find("/", posMiddle)) != posLast - 1)
+                posMiddle = posCur + 1;
+            //std::cout << "HERE4\n";
+            if (posMiddle)
+                posMiddle--;
+            posLast--;
+            directory = target.substr(posMiddle, posLast - posMiddle);
+            std::string newRequest = target.substr(posLast, request.size() - posLast);
+            std::cout << "DIRECTORY IS: " << directory << " | NEW REQUEST: " << newRequest << "\n";
+            target = newRequest;
+        }*/
+
+        size_t posCur = 0, posLast = 0;
+        while ((posCur = target.find("/", posLast)) != std::string::npos)
+            posLast = posCur + 1;
+        if (posLast)
+            envs["PATH_INFO"] = target.substr(posLast - 1, target.size() - posLast + 1);
+        else
+            envs["PATH_INFO"] = target;
+
         envs.insert(std::pair<std::string, std::string>("SERVER_PROTOCOL", "HTTP/1.1"));
         envs.insert(std::pair<std::string, std::string>("SERVER_SOFTWARE", "whatever/0.0"));
         envs.insert(std::pair<std::string, std::string>("GATEWAY_INTERFACE", "CGI/1.1"));
         envs.insert(std::pair<std::string, std::string>("SCRIPT_NAME", path.str()));
         envs["SCRIPT_FILENAME"] = envs["SCRIPT_NAME"];
-        envs["PATH_INFO"] = target;
-        envs["PATH_TRANSLATED"] = target;
+        //envs["PATH_INFO"] = path.str();
+
+        envs["PATH_TRANSLATED"] = envs["PATH_INFO"];
         envs["REDIRECT_STATUS"] = true;
         
-        
-        
+        std::cout << "PATH INFO: " << envs["PATH_INFO"] << "\n";
+
         //BODY
-        if (getLen() && !cgi.empty())
+        std::cout << "BODY SIZE IS " << getLen() << "\n";
+        if (getLen() && !cgi.empty() && !requestIsChunked)
         {
+            std::cout << "We have len!\n";
             if (maxSize > -1 && maxSize < requestBodySize)
             {
                 code = 411;
@@ -565,10 +607,12 @@ public:
                 return (handleErrorPage(code));//, &(result->second)));
             }
             pos2 += 4;
+
+            std::cout << "SGI run\n";
             requestBody = request.substr(pos2, getLen());
-            //std::cout << "Request body:\n#" << requestBody << "#\nEnd\n";
+
             try{
-                //std::cout << "HERE1\n";
+                std::cout << "CGI HERE1\n";
                 std::stringstream filename;
                 //std::cout << "Map: " << result->second.getRoot() << "\n";
                 //filename << result->second.getBuffer() << "/." << port->getDescriptor() << "_" << descriptor;
@@ -578,18 +622,18 @@ public:
                 //std::cout << "RequestBuffer: " << requestBuffer << "\n";
                 std::stringstream tmp2;
                 tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
-                fileWrite = new FileUpload(requestBuffer, getLen(), requestBody, this, false);
+                fileWrite = new FileUpload(requestBuffer, getLen(), requestBody, this, false);//, false);
                 //std::cout << "Client " << getDescriptor() << "created fileWrite " << getFileWrite()->getDescriptor() << "\n";
                 filename << "_read";
-                fileRead = new FileUpload(filename.str(), 0, "", this, false);
+                fileRead = new FileUpload(filename.str(), 0, "", this, false);//, false);
                 //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
                 envs["HTTP_TMP"] = tmp2.str();
                 requestBody.clear();
                 setStatus(3);
                 filename.str("");
                 //setStatus(-1);
-                //std::cout << "end parse\n";
-                
+                std::cout << "end parse\n";
+                return (false);
             } catch (Exception &e){
                 /*std::cout << e.what() << "\n";
                 setStatus(-1);
@@ -597,7 +641,75 @@ public:
                 code = 500;
                 return (handleErrorPage(code));//, &(result->second)));
             }
-            return (false);
+        }
+        else if (requestIsChunked)
+        {
+            pos2 = request.find("\r\n\r\n");
+            if (pos2 == std::string::npos)
+            {
+                code = 400;
+                return (handleErrorPage(code));//, &(result->second)));
+            }
+            pos2 += 4;
+
+            int chunkSize = 0;
+            std::stringstream chunks;
+            while ((pos = request.find("\r\n", pos2)) != std::string::npos)
+            {
+                std::stringstream lenConverter;
+
+                //std::cout << "HEX SIZE IS " << request.substr(pos2, pos - pos2) << "\n";
+                lenConverter << request.substr(pos2, pos - pos2);
+                lenConverter >> std::hex >> requestBodySize;
+                //std::cout << "Converted body size = " << requestBodySize << "\n";
+                lenConverter.str("");
+                chunkSize += requestBodySize;
+                pos2 = pos + 2;
+                chunks << request.substr(pos2, requestBodySize);
+                pos2 = pos2 + requestBodySize + 2;
+            }
+
+            if (chunkSize < 0)
+            {
+                code = 500;
+                return (handleErrorPage(code));
+            }
+
+            std::stringstream filename;
+            //std::string filename = path.str();
+            //std::cout << "filename is " << filename;
+            try{
+                if (requestType == 4)
+                {
+                    filename << path.str();
+                    fileWrite = new FileUpload(filename.str(), chunkSize, chunks.str(), this, false);//, true);
+                    fileWrite->setConstant();
+                    fileRead = 0;
+                }
+                else
+                {
+                    filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor;
+                    requestBuffer = filename.str();
+                    std::cout << "RequestBuffer: " << requestBuffer << "\n";
+                    std::stringstream tmp2;
+                    tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
+                    fileWrite = new FileUpload(requestBuffer, chunkSize, chunks.str(), this, false);//, false);
+                    std::cout << "Client " << getDescriptor() << "created fileWrite " << getFileWrite()->getDescriptor() << "\n";
+                    filename << "_read";
+                    fileRead = new FileUpload(filename.str(), 0, "", this, false);//, false);
+                    std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
+                    envs["HTTP_TMP"] = tmp2.str();
+                    //fileRead = new FileUpload(filename + "_read", 0, "", this, false, false);
+                }
+                chunks.str("");
+                filename.str("");
+                setStatus(3);
+                return (false);
+            } catch (Exception &e){
+                code = 500;
+                return (handleErrorPage(code));
+            }
+            //}
         }
         else if (!envs["QUERY_STRING"].empty() && !cgi.empty())
         {
@@ -606,7 +718,7 @@ public:
                 fileWrite = 0;
                 //filename << result->second.getBuffer() << "/." << port->getDescriptor() << "_" << descriptor << "_read";
                 filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor << "_read";
-                fileRead = new FileUpload(filename.str(), 0, "", this, false);
+                fileRead = new FileUpload(filename.str(), 0, "", this, false);//, false);
                 //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
                 envs["HTTP_TMP"] = "";
                 setStatus(3);
@@ -620,9 +732,15 @@ public:
             }
             return (false);
         }
-        
+
+        /*if (requestType == 2)
+        {
+            status = -1;
+            return (true);
+        }*/
+
         try{
-            fileRead = new FileUpload(path.str(), 0, "", this, true);
+            fileRead = new FileUpload(path.str(), 0, "", this, true);//, false);
             fileRead->setStatus(2);
             status = 6;
         }catch(Exception &e){
@@ -666,12 +784,31 @@ public:
     void cgiResponseSimple()
     {
         //file->resetDescriptor();
-        int enter = open(".enter", O_RDWR | O_CREAT, S_IRWXG | S_IRWXU | S_IRWXO);
-        if (enter < 0)
+        int enter;
+
+        if (!requestIsChunked)
         {
-            std::cout << "ENTER FILE ERROR\n";
-            status = -1;
-            return ;
+            std::cout << "CLassic enter\n";
+            enter = open(".enter", O_RDWR | O_CREAT, S_IRWXG | S_IRWXU | S_IRWXO);
+            if (enter < 0)
+            {
+                std::cout << "ENTER FILE ERROR\n";
+                //status = -1;
+                code = 500;
+                handleErrorPage(code);
+                return ;
+            }
+        }
+        else
+        {
+            std::cout << "Tester enter\n";
+            if (!fileWrite || !fileWrite->resetDescriptor())
+            {
+                code = 500;
+                handleErrorPage(code);
+                return ;
+            }
+            std::cout << "Tester enter done\n";
         }
         /*fileRead->descriptor = open(FileRead->filepath);
         if (fileRead->getDescriptor() < 0)
@@ -680,11 +817,13 @@ public:
             status = -1;
             return ;
         }*/
+        std::cout << "CGI is " << cgi << "\n";
         std::vector<std::string> args_cpp;
         args_cpp.push_back(cgi);
         args_cpp.push_back(path.str());
         const char * args[3] = {args_cpp[0].c_str(), args_cpp[1].c_str(), NULL};
         int result = 0;
+
 
         pid_t pid = fork();
         if (pid < 0)
@@ -701,13 +840,20 @@ public:
         {
             dup2(fileRead->getDescriptor(), 1);
             dup2(fileRead->getDescriptor(), 2);
-            dup2(enter, 0);
+            if (!requestIsChunked)
+                dup2(enter, 0);
+            else
+                dup2(fileWrite->getDescriptor(), 0);
             exit(execve(cgi.c_str(), (char* const *)args, cgiEnvCreate()));
         }
         else
         {
             waitpid(pid, &result, 0);//&result
-            close(enter);
+            if (!requestIsChunked)
+                close(enter);
+            else
+                fromCgi = true;
+            std::cout << "Waitpid\n";
             //std::cout << "Check PATH: " << fileRead->getPath() << "\n";
             /*std::ifstream f(fileRead->getPath().c_str());
             if (f.good())
@@ -734,11 +880,11 @@ public:
             
             if (result || !fileRead->resetDescriptor())
             {
-                std::cout << "PIPE FILE ERROR\n";
+                //std::cout << "828: PIPE FILE ERROR\n";
                 //status = -1;
-                code = 500;
-                handleErrorPage(code);//, &(result->second));
                 fileRead->setStatus(-2);
+                //handleErrorPage(code);//, &(result->second));
+                //status = -3;
                 return ;
             }
             fileRead->setStatus(2);
@@ -751,9 +897,14 @@ public:
         //std::cout << "FORM ANSWER\n";
         if (status == 4)
         {
-            status = 5;
-            cgiResponseSimple();
-            return ;
+            if (requestType != 4 && !cgi.empty())
+            {
+                status = 5;
+                cgiResponseSimple();
+                return ;
+            }
+            else
+                status = 2;
         }
         if (!code)
             code = 200;
@@ -765,12 +916,31 @@ public:
         response << "HTTP/1.1 " << code << " OK\r\n";
         response << "Cache-Control: no-cache, private\r\n";
         response << "Content-Type: text/html\r\n";
-        response << "Content-Length: " << content.size() << "\r\n";
+
 
         //if (!keepAlive)
         //    response << "Connection: close\r\n";
-        response << "\r\n";
+        /*if (!fromCgi)
+        {
+            response << "Content-Length: " << content.size() << "\r\n\r\n";
+            //response << "\r\n";
+        }
+        else
+        {*/
+            size_t pos = content.find("\r\n\r\n", 0);
+            if (pos != std::string::npos)
+            {
+                pos += 4;
+                size_t newsize = content.size() - pos;
+                response << "Content-Length: " << newsize << "\r\n";
+            }
+            else
+                response << "Content-Length: " << content.size() << "\r\n\r\n";
+        //}
+        //if (code != 204)
         response << content;
+        /*if (fromCgi)
+            response << "\r\n\r\n";*/
         responseSize = response.str().size() + 1;
         /*if (requestType == 1)
             status = 2;*/
@@ -793,7 +963,8 @@ public:
             host << request.substr(pos, pos2 - pos);
             std::map<std::string, ServerBlock>::iterator result = port->getMap().find(host.str());
             //std::cout << "RESULT: " << result->first << "\n";// << *(result->second) << "\n";
-            status = 1;
+            if (status != 9)
+                status = 1;
             if (result != port->getMap().end())
             {
                 host.str("");
@@ -808,8 +979,10 @@ public:
     
     void sendResponse()
     {
-        //std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
+        std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
+        std::cout << "short:\n###\n" << response.str().substr(responsePos, 200) << "\n###\n";
         //std::cout << "To send:\n" << response.str().substr(responsePos, responseSize - responsePos).c_str() << "\nEND\n";
+        std::cout << "Send CODE " << code << "\n";
         int send_size = send(descriptor, response.str().substr(responsePos, responseSize - responsePos).c_str(), responseSize - responsePos, 0);
         //std::cout << "Send returned : " << send_size << "\n";
         if (send_size <= 0)
@@ -835,7 +1008,7 @@ public:
     bool is_full()
     {
         std::string value = getBufferStr();
-        //std::cout << value << "\n";
+        //std::cout << "IS FULL: " << value << "\n";
         if (!getType())
         {
             if (!value.compare(0, 4, "GET "))
@@ -852,19 +1025,31 @@ public:
             }
             else if (!value.compare(0, 7, "DELETE "))
                 setType(3);
+            else if (!value.compare(0, 4, "PUT "))
+            {
+                //requestMethod = "POST";
+                envs.insert(std::pair<std::string, std::string>("REQUEST_METHOD", "PUT"));
+                setType(4);
+            }
             else
                 setType(0);
         }
-        if (((getType() == 1 || getType() == 3) && ends_with(value, "\r\n\r\n")) || (!requestType && value.length()))
+        if (((getType() == 1 || getType() == 3) && ends_with(value, "\r\n\r\n")) || (!requestType && value.length()))// || (getType() == 4 && status != 10)
         {
             //std::cout << "IS FULL\n";
-            setStatus(1);
+            //setStatus(1);
             return (true);
         }
+        /*else if (requestIsChunked && ends_with(value, "\r\n0\r\n\r\n"))
+        {
+            setStatus(1);
+            std::cout << "PUT is full\n";
+            return (true);
+        }*/
 
         size_t pos = 5;
         size_t pos2;
-        if (!getLen())
+        if (!getLen() && !requestIsChunked)
         {
             std::stringstream sizestream;
             pos2 = value.find("\r\nContent-Length: ", pos);
@@ -882,16 +1067,45 @@ public:
                 }
                 sizestream.str("");
             }
+            else
+            {
+                pos2 = value.find("\r\nTransfer-Encoding: ", pos);
+                if (pos2 != std::string::npos)
+                {
+                    pos2 += 21;
+                    pos =  value.find("\r\n", pos2);
+                    if (pos != std::string::npos)
+                    {
+                        sizestream << value.substr(pos2, pos - pos2);
+                        std::string checkChunk = sizestream.str();
+                        if (!checkChunk.compare("chunked"))
+                            requestIsChunked = true;
+                        sizestream.str("");
+                    }
+
+                }
+            }
         }
-        
+
+        if (requestIsChunked)
+        {
+            if (ends_with(value, "\r\n0\r\n\r\n"))
+            {
+                setStatus(1);
+                std::cout << "PUT is full\n";
+                return (true);
+            }
+            return (false);
+        }
         pos2 = value.find("\r\n\r\n", pos);
         if (pos2 == std::string::npos)
             return (false);
         pos2 += 4;
         //std::cout << "Length = " << value.length() << " | pos = " << pos2 << "\n";
-        if (value.length() - getLen() == pos2)
+        if (!requestIsChunked && value.length() - getLen() == pos2)
         {
             setStatus(1);
+            std::cout << "STATUS SET TO 1\n";
             return (true);
         }
         return (false);
@@ -946,8 +1160,10 @@ public:
     void finishPipe()
     {
         //std::cout << "FINISH PIPE\n";
-        fileRead->setStatus(2);
+        //fileRead->setStatus(2);
         //resetFile(&fileWrite);
+        resetFile(&fileRead);
+        code = 500;
     }
 
     bool shouldKeep()

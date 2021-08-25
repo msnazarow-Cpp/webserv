@@ -232,6 +232,9 @@ Parser::Parser(char *confFileName, Server *server) {
                     } else if (str == "DELETE") {
                         loc.methods.insert(DELETE);
                         //std::cout << "DELETE INSERTED\n";
+                    } else if (str == "PUT") {
+                        loc.methods.insert(PUT);
+                        //std::cout << "DELETE INSERTED\n";
                     } else {
                         throw ParserNotValidException();
                     }
@@ -251,6 +254,9 @@ Parser::Parser(char *confFileName, Server *server) {
                         //std::cout << "POST INSERTED\n";
                     } else if (str == "DELETE") {
                         tmp.methods.insert(DELETE);
+                        //std::cout << "DELETE INSERTED\n";
+                    } else if (str == "PUT") {
+                        tmp.methods.insert(PUT);
                         //std::cout << "DELETE INSERTED\n";
                     } else {
                         throw ParserNotValidException();
@@ -406,45 +412,97 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
 }
 
 
-std::string Parser::getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code, int &maxSize) {
-    std::string out;
+std::string Parser::getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code, int &maxSize, std::string directory, bool chunked) {
+    std::string out = "";
     struct stat statbuf;
-    
-    //std::cout << "SEARCH: " << server_name << " | " << port << " | " << request << "\n";
+
+    std::cout << "SEARCH: " << server_name << " | " << port << " | " << request << "\n";
     for (size_t i = 0; i < blocks.size(); ++i) {
         if (!blocks[i].server_name.count(server_name) || !blocks[i].listen.count(port))
             continue;
         ServerBlock block = blocks[i];
         for (size_t j = 0; j < block.locations.size(); ++j) {
             Location loc = block.locations[j];
+            std::cout << "Check location: " << loc.root << " for target " << request << "\n";
+
             if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
             hasEnding(request, loc.location[1]))){
-                out = loc.root + request;
-                if (stat(out.c_str(), &statbuf)) {//TODO Теперь если try_files поместить в конфиге в самую первую локацию, cgi не будут работать - срабатывает строка 439, и проверка не переходит к следующей локации
+
+                if (directory.empty())
+                {
+                    for (std::vector<std::string>::iterator it = loc.location.begin(); it != loc.location.end(); it++)
+                    {
+                        std::cout << "CHECKING " << *it << " COMPARE TO " << request << "\n";
+                        size_t dirSize = (*it).size();
+                        std::cout << "COMPARISON: dirsize = " << dirSize << " | char = " << request[dirSize] << "\n";
+                        std::cout << "RESULT = " << request.compare(0, dirSize, (*it)) << "\n";
+                        if (!request.compare(0, dirSize, (*it)))
+                        {
+                            std::cout << "HERE30\n";
+                            if (dirSize == request.size())
+                            {
+                                out = loc.root;
+                                directory = out;
+                                request = "/";
+                                std::cout << "NOW SEARCH FOR: " << out << "\n";
+                                break ;
+                            }
+                            else if (request[dirSize] == '/')
+                            {
+                                std::cout << "HERE31\n";
+                                std::string tmp = request.substr(dirSize, request.size() - dirSize);
+                                request = tmp;
+                                directory = loc.root;
+                                out = loc.root + tmp;
+                                std::cout << "NOW SEARCH FOR: " << out << "\n";
+                                break ;
+                            }
+                        }
+
+                    }
+                }
+
+                std::cout << "HERE1\n";
+                if (out.empty())
+                {
+                    if (directory.empty())
+                        out = loc.root + request;
+                    else
+                        out = directory + request;
+                }
+                std::cout << "HERE2 | out: " << out << "\n";
+                if (stat(out.c_str(), &statbuf) && !chunked) {//TODO Теперь если try_files поместить в конфиге в самую первую локацию, cgi не будут работать - срабатывает строка 439, и проверка не переходит к следующей локации
+                    std::cout << "HERE3\n";
                     for (size_t k = 0; k < loc.try_files.size(); ++k) {
                         if (hasEnding(request, loc.try_files[k]))
                         {
                             break;
                         }
-                        out = getfilename(server_name, port, request + loc.try_files[k], isErrorPage, cgi, isLegit, requestType, code, maxSize);
+                        out = getfilename(server_name, port, request + loc.try_files[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked);
                         if (code != 404) {
                             isErrorPage = false;
                             return (out);
                         }
                     }
+                    std::cout << "HERE4\n";
                     isErrorPage = true;
                     code = 404;
+                    std::cout << "END 404 HERE\n";
                     /*if (block.error_page.count(404)){
                         return (block.root + '/' + block.error_page[404]);
                     }
                     return "404";*/
                     return (block.getErrorPage(code));
                 }
-                if (S_ISDIR(statbuf.st_mode)){
+                std::cout << "HERE5\n";
+                if (S_ISDIR(statbuf.st_mode) && !chunked){
+                    std::cout << "HERE6\n";
                     if (request[request.size() - 1] != '/')
                         request.push_back('/');
+                    std::cout << "HERE7\n";
                     for (size_t k = 0; k < loc.index.size(); ++k) {
-                        out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize);
+                        out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked);
+                        std::cout << "check OUT: " << out << "\n";
                         if(code != 404) {
                             isErrorPage = false;
                             return (out);
@@ -454,11 +512,13 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                 return (IndexHtmlMaker::makeIndexFile(loc.root, request));
                             } catch (...){
                                 //return "505";
+                                std::cout << "HERE22\n";
                                 isErrorPage = true;
                                 code = 505;
                                 return (block.getErrorPage(code));
                             }
                         } else {
+                            std::cout << "HERE21\n";
                             code = 403;
                             isErrorPage = true;
                             /*if (block.error_page.count(403)){
@@ -470,17 +530,19 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         }
                     }
                 }
+                std::cout << "HERE8\n";
                 isErrorPage = false;
                 cgi = loc.cgi_pass; // зачем тут геттер?
                 maxSize = loc.client_max_body_size;
+                std::cout << "HERE9\n";
                 //std::cout << "loc methods count = " << loc.methods.size() << "\n";
                 switch (requestType) {
-                    case 0:{
+                    /*case 0:{
                         isLegit = false;
-                        code = 400;
+                        code = 405;
                         //return
                         break ;
-                    }
+                    }*/
                     case 1:{
                         if (loc.methods.count(GET))
                             isLegit = true;
@@ -514,21 +576,37 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         }
                         break ;
                     }
+                    case 4:{
+                        if (loc.methods.count(PUT))
+                            isLegit = true;
+                        else
+                        {
+                            code = 405;
+                            isLegit = false;
+                            //return
+                        }
+                        break ;
+                    }
                 }
+                std::cout << "HERE10\n";
                 if (!isLegit)
                     out = block.getErrorPage(code);
                 return (out);
             }
         }
+        std::cout << "HERE11\n";
         out = block.root + request;
+        std::cout << "HERE12 | out: " << out << "\n";
         if (stat(out.c_str(), &statbuf))
         {
+            std::cout << "HERE13\n";
             for (size_t k = 0; k < block.try_files.size(); ++k) {
-                out = getfilename(server_name, port, request + block.try_files[k], isErrorPage, cgi, isLegit, requestType, code, maxSize);
+                out = getfilename(server_name, port, request + block.try_files[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked);
                 if (code != 404) {
                     return (out);
                 }
             }
+            std::cout << "HERE14\n";
             isErrorPage = true;
             code = 404;
             /*if (block.error_page.count(404)){
@@ -537,18 +615,21 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             return "404";*/
             return (block.getErrorPage(code));
         }
+        std::cout << "HERE15\n";
         if (S_ISDIR(statbuf.st_mode)){
+            std::cout << "HERE16\n";
             if (request[request.size() - 1] != '/')
                 request.push_back('/');
             for (size_t k = 0; k < block.index.size(); ++k) {
                 if (hasEnding(request,block.try_files[i]))
                     break;
-                out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize);
+                out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked);
                 if(code != 404){
                     isErrorPage = false;
                     return (out);
                 }
             }
+            std::cout << "HERE17\n";
             if (block.autoindex){
                 try {
                     return (IndexHtmlMaker::makeIndexFile(block.root, request));
@@ -559,6 +640,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     return (block.getErrorPage(code));
                 }
             }
+            std::cout << "HERE18\n";
             code = 403;
             isErrorPage = true;
             /*if (block.error_page.count(403)){
@@ -568,9 +650,11 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                 return "403";*/
             return (block.getErrorPage(code));
         }
+        std::cout << "HERE19\n";
         isErrorPage = false;
         return (out);
     }
+    std::cout << "HERE20\n";
     isErrorPage = true;
     code = 404;
     //return ("404");

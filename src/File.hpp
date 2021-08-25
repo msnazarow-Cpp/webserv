@@ -21,7 +21,24 @@ public:
     {
         if (!constant)
         {
-            descriptor = open(filepath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0777);
+            //if (!for_put)
+                descriptor = open(filepath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0777);
+            /*else
+            {
+                std::cout << "Creating file for put\n";
+                if (FILE *checker = fopen(filepath.c_str(), "r"))
+                {
+                    fclose(checker);
+                    descriptor = open(filepath.c_str(), O_APPEND | O_WRONLY, 0777);
+                    std::cout << "Append to old one\n";
+                }
+                else
+                {
+                    descriptor = open(filepath.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0777);
+                    std::cout << "New file\n";
+                }
+                std::cout << "size = " << this->size << "\n";
+            }*/
             //std::cout << "Descriptor = " << descriptor << "\n";
             //std::cout << "CONTENT:\n" << content << "\nEND CONTENT\n";
             //std::cout << "FILEPATH: " << this->filepath << "\n";
@@ -47,7 +64,7 @@ public:
         //std::cout << "FILE WRITE : size = " << size << " | pos = " << pos << " | result = " << size - pos << "\n";
         //std::cout << "To write:\n" << content.substr(pos, size - pos).c_str() << "\nEND\n";
         int send_size = write(descriptor, content.substr(pos, size - pos).c_str(), size - pos);
-        //std::cout << "File writing returned : " << send_size << "\n";
+        std::cout << "File writing returned : " << send_size << " | Descriptor = " << descriptor << "\n";
         if (send_size <= 0)
         {
             status = -2;
@@ -100,6 +117,11 @@ public:
     bool isConstant()
     {
         return (constant);
+    }
+
+    void setConstant()
+    {
+        constant = true;
     }
 };
 
