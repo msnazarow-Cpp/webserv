@@ -309,7 +309,7 @@ public:
         size_t pos;
         size_t pos2;
         //std::cout << "PARSE HEADER\n";
-        //std::cout << "PARSE HEADER\nREQUEST:\n" << request.substr(0, 500) << "\nEND\n";
+        std::cout << "PARSE HEADER\nREQUEST:\n" << request.substr(0, 500) << "\nEND\n";
         if (requestType == 1 || requestType == 4)
             pos = 4;
         else if (requestType == 2)
@@ -637,15 +637,20 @@ public:
                 filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor;
                 //std::cout << "Buffer: " << result->second.getBuffer() << "\n";
                 requestBuffer = filename.str();
+                envs["HTTP_BODY"] = requestBuffer;
+                envs["HTTP_BUFFER_PATH"] = s_block->getBuffer();
+                envs["HTTP_UPLOADS_PATH"] = s_block->getUploadsDir();
+                //std::cout << "ENVPATH: " << envs["HTTP_UPLOADS_PATH"] << "\n";
                 //std::cout << "RequestBuffer: " << requestBuffer << "\n";
-                std::stringstream tmp2;
-                tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
+                //std::stringstream tmp2;
+                //tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
+
                 fileWrite = new FileUpload(requestBuffer, getLen(), requestBody, this, false);//, false);
                 //std::cout << "Client " << getDescriptor() << "created fileWrite " << getFileWrite()->getDescriptor() << "\n";
                 filename << "_read";
                 fileRead = new FileUpload(filename.str(), 0, "", this, false);//, false);
                 //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
-                envs["HTTP_TMP"] = tmp2.str();
+                //envs["HTTP_TMP"] = tmp2.str();
                 requestBody.clear();
                 setStatus(3);
                 filename.str("");
@@ -719,15 +724,18 @@ public:
                 {
                     filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor;
                     requestBuffer = filename.str();
+                    envs["HTTP_BODY"] = requestBuffer;
+                    envs["HTTP_BUFFER_PATH"] = s_block->getBuffer();
+                    envs["HTTP_UPLOADS_PATH"] = s_block->getUploadsDir();
                     //std::cout << "RequestBuffer: " << requestBuffer << "\n";
-                    std::stringstream tmp2;
-                    tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
+                    //std::stringstream tmp2;
+                    //tmp2 << ".buffer/." << port->getDescriptor() << "_" << descriptor;
                     fileWrite = new FileUpload(requestBuffer, chunkSize, chunks.str(), this, false);//, false);
                     //std::cout << "Client " << getDescriptor() << "created fileWrite " << getFileWrite()->getDescriptor() << "\n";
                     filename << "_read";
                     fileRead = new FileUpload(filename.str(), 0, "", this, false);//, false);
                     //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
-                    envs["HTTP_TMP"] = tmp2.str();
+                    //envs["HTTP_TMP"] = tmp2.str();
                     //fileRead = new FileUpload(filename + "_read", 0, "", this, false, false);
                     chunks.str("");
                     filename.str("");
@@ -751,7 +759,10 @@ public:
                 filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor << "_read";
                 fileRead = new FileUpload(filename.str(), 0, "", this, false);//, false);
                 //std::cout << "Client " << getDescriptor() << "created fileRead " << getFileRead()->getDescriptor() << "\n";
-                envs["HTTP_TMP"] = "";
+                envs["HTTP_BODY"] = "";
+                envs["HTTP_BUFFER_PATH"] = s_block->getBuffer();
+                envs["HTTP_UPLOADS_PATH"] = s_block->getUploadsDir();
+                std::cout << "ENVPATH: " << envs["HTTP_UPLOADS_PATH"] << "\n";
                 setStatus(3);
                 filename.str("");
             } catch (Exception &e){
@@ -1046,7 +1057,7 @@ public:
     void sendResponse()
     {
         //std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
-        //std::cout << "short:\n###\n" << response.str().substr(responsePos, 200) << "\n###\n";
+        std::cout << "short:\n###\n" << response.str().substr(responsePos, 500) << "\n###\n";
         //std::cout << "To send:\n" << response.str().substr(responsePos, responseSize - responsePos).c_str() << "\nEND\n";
         std::cout << "Send CODE " << code << "\n";
         int send_size = send(descriptor, response.str().substr(responsePos, responseSize - responsePos).c_str(), responseSize - responsePos, 0);

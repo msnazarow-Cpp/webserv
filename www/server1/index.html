@@ -6,10 +6,14 @@
 	<body>
 		<center><img src="logo.jpeg"></center>
 		<h1>Best service for uploading your files for nothing</h1>
-		<form action="/fileupload.php?filename" enctype="multipart/form-data" method="post">
+		<form action="/fileupload.php" enctype="multipart/form-data" method="post">
 			<p>files: <input type="file" id="myFile" name="userfile" size="1"></p>
   			<input type="submit">
 		</form>
+        <form action="/filedownload.php" method="get">
+            <input type="text" id="downloadname" name="dwnload">
+            <button>Download</button>
+        </form>
         <form action="/test.php" enctype="multipart/form-data" method="post">
               <input type="submit" value="get kartinko">
         </form>
