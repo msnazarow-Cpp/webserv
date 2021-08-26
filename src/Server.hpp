@@ -289,7 +289,7 @@ public:
             {
                 //std::cout << descr << "-client is readable\n";
                 ret = recv(descr, buf, BUFFERSIZE, 0);
-                std::cout << descr << ": Ret = " << ret << "\n";
+                //std::cout << descr << ": Ret = " << ret << "\n";
                 if (ret > 0)
                 {
                     (*itC)->setTimer();

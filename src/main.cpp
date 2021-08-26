@@ -78,7 +78,7 @@ int main (int argc, char *argv[])
             {
                 //std::cout << "\nCHECK REMOVALS\n";
                 //server->remove();
-                //std::cout << "SELECT TIMEOUT\n";
+                std::cout << "SELECT TIMEOUT\n";
                 continue ;
             }
             //std::cout << "\nCHECK PORTS\n";

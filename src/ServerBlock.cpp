@@ -35,7 +35,13 @@ std::ostream &operator<<(std::ostream &os, const ServerBlock &d) {
 
 bool ServerBlock::createDirs()
 {
+
     bufferDir = root + "/.buffer";
+    /*size_t pos1 = 0, pos2 = 0;
+    while ((pos1 = root.find("/", pos2)) != std::string::npos)
+        pos2 = pos1 + 1;
+    bufferDir = "/goinfre/jnoma/buffers/" + root.substr(pos2, root.size() - pos2) + "/.buffer";
+    std::cout << "Temp buffer dir: " << bufferDir << "\n";*/
     const char *tmp = bufferDir.c_str();
     mkdir(tmp, 0777);
     struct stat info;
