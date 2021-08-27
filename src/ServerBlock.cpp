@@ -52,11 +52,11 @@ bool ServerBlock::createDirs()
     //uploadDir = root + "/uploads";
     //const char *tmp2 = uploadDir.c_str();
 
-    const char *tmp2 = (root + uploads_directory).c_str();
+    std::string tmp2 = (root + uploads_directory);
     //std::cout << "DIR: " << tmp2 << "\n";
-    mkdir(tmp2, 0777);
+    mkdir(tmp2.c_str(), 0777);
 
-    if(!(!stat(tmp2, &info) && (info.st_mode & S_IFDIR)))
+    if(!(!stat(tmp2.c_str(), &info) && (info.st_mode & S_IFDIR)))
         return (false);
     return (true);
 }

@@ -209,9 +209,9 @@ public:
         code = val;
     }
 
-    void fillErrorContent(int code)
+    void fillErrorContent(int _code)
     {
-        switch (code){
+        switch (_code){
             case 100:{
                 content = "<h1>100: Continue</h1>";
                 break;
@@ -271,7 +271,7 @@ public:
         }
     }
 
-    bool handleErrorPage(int code)//, ServerBlock *block)
+    bool handleErrorPage(int _code)//, ServerBlock *block)
     {
         //std::cout << "Handle error\n";
         if (!s_block)
@@ -279,13 +279,13 @@ public:
             status = -1;
             return (true);
         }
-        if (code == 100 || code == 204 || code == 405)
+        if (_code == 100 || _code == 204 || _code == 405)
             keepAlive = true;
-        std::string error = s_block->getErrorPage(code);
+        std::string error = s_block->getErrorPage(_code);
         //std::cout << "Error: " << error << "\n";
         if (error.empty())
         {
-            fillErrorContent(code);
+            fillErrorContent(_code);
             status = 2;
             formAnswer();
         }
@@ -296,7 +296,7 @@ public:
                 fileRead->setStatus(2);
                 status = 6;
             }catch(Exception &e){
-                fillErrorContent(code);
+                fillErrorContent(_code);
                 status = 2;
                 formAnswer();
             }

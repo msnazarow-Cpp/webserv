@@ -57,6 +57,8 @@ Parser::Parser(char *confFileName, Server *server) {
         std::stringstream ss;
         ss << str;
         while (ss >> str){
+            if (str.substr(0, 1) == "#")
+                break;
             switch (tmp.status) {
                 case clean : {
                     if (str == "server") {
