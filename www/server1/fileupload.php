@@ -35,7 +35,7 @@
     $filename = getenv("HTTP_BODY");
     $filepath = getenv("HTTP_BUFFER_PATH");
     $filename2 = substr($filename, strlen($filepath) + 2) . "_" . date_timestamp_get($date) . "_";
-    echo $filename . " | " . $filename2 . " | ";
+    #echo $filename . " | " . $filename2 . " | ";
     $length = getenv("CONTENT_LENGTH");
     $file = fopen($filename, "r+");
 

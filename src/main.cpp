@@ -30,8 +30,8 @@ int main (int argc, char *argv[])
     char *arg;
     if (argc == 1)
     {
-        std::string tmp("./default.conf"); //TODO Зачем здесь переменная если она нигде не используется? - ниже используется
-        arg = const_cast<char *>(tmp.c_str());
+        //std::string tmp("./default.conf"); //TODO Зачем здесь переменная если она нигде не используется? - ниже используется
+        arg = const_cast<char *>("./default.conf");
         struct stat info;
         if(!(!stat(arg, &info) && !S_ISDIR(info.st_mode)))
         {

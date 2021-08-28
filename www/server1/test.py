@@ -1,0 +1,17 @@
+#!/usr/bin/python
+import os
+print ('<html>')
+print ('<head>')
+print ('<title>Image python</title>')
+print ('</head>')
+print ('<body>')
+print ('<h1>No kartinko but text saved by python script. And your text is: </h1>')
+#print (os.environ["SCRIPT_NAME"])
+#dirname = os.path.dirname(__file__)
+#filename = os.path.join(dirname, os.environ["HTTP_TMP"])
+#f = open(filename, "r")
+#print(f.read().replace('text=', ''))
+#f.close()
+print(os.environ["QUERY_STRING"].replace('text=', ''))
+print ('</body>')
+print ('</html>')
