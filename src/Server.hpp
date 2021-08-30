@@ -22,7 +22,7 @@ private:
     std::vector<FileUpload *> toeraseF;
     std::vector<Port *> allports;
     struct timeval timeout;
-    char buf[BUFFERSIZE];
+    char buf[BUFFERSIZE + 1];
     Parser *_parser;
     
 public:
@@ -35,7 +35,7 @@ public:
     
     void refillSets()
     {
-        //std::cout << "SET REFILL\n";
+        std::cout << "SET REFILL\n";
         FD_ZERO(&read_current);
         FD_ZERO(&write_current);
         //std::cout << "Clients size = " << allclients.size() << "\n";
@@ -251,7 +251,7 @@ public:
 
     void handleConnections()
     {
-        //std::cout << "Handle connection\n";
+        std::cout << "Handle connection\n";
         Port *curport;
         int descr;
         for (size_t i = 0; i < portsCount(); ++i)
@@ -275,7 +275,7 @@ public:
     
     void readRequests()
     {
-        //std::cout << "READ REQUESTS BLOCK\n";
+        std::cout << "READ REQUESTS BLOCK\n";
         ssize_t ret;
         int descr;
         std::vector<Client *>::iterator itC = allclients.begin();
@@ -292,11 +292,13 @@ public:
                 if (ret > 0)
                 {
                     (*itC)->setTimer();
-                    for (ssize_t k = 0; k < ret; k++)
+                    /*for (ssize_t k = 0; k < ret; k++)
                     {
                         (*itC)->fillBuffer(buf[k]);
                         buf[k] = 0;
-                    }
+                    }*/
+                    (*itC)->fillBuffer(buf, ret);
+                    bzero(&buf, ret);
                     //std::cout << "Buffer:\n" << readbufs[*it].str() << "\nEnd buffer\n";
                     if ((*itC)->is_full())
                     {
@@ -304,8 +306,9 @@ public:
                         if ((*itC)->getStatus() == 3 && (*itC)->getFileWrite())
                             addFile((*itC)->getFileWrite());
                     }
+                    itC++;
                 }
-                if (ret <= 0)
+                else if (ret <= 0)
                 {
                     if ((*itC)->getFileWrite())
                     {
@@ -319,22 +322,23 @@ public:
                         if (itF != allfiles.end())
                             allfiles.erase(itF);
                     }
+                    (*itC)->setKeep(false);
                     delete (*itC);
                     itC = allclients.erase(itC);
                 }
-                else
-                    itC++;
+                /*else
+                    itC++;*/
             }
             else
                 itC++;
         }
-    
+
 
         std::vector<FileUpload *>::iterator itF = allfiles.begin();
         while (itF != allfiles.end())
         {
             descr = (*itF)->getDescriptor();
-            std::cout << "Check file for read: " << descr << " | status = " << (*itF)->getStatus(); //" | path = " << file->getPath() << "\n";
+            std::cout << "Check file for read: " << descr << " | status = " << (*itF)->getStatus() << "\n"; //" | path = " << file->getPath() << "\n";
             if (isSetRead(descr))
             {
                 ret = read(descr, buf, BUFFERSIZE);
@@ -343,25 +347,31 @@ public:
                 {
                     //std::cout << "RET = " << ret << "\n";
                     (*itF)->getClient()->setTimer();
-                    for (int k = 0; k < ret; k++)
+                    /*for (int k = 0; k < ret; k++)
                     {
                         (*itF)->getClient()->fillContent(buf[k]);
                         //std::cout << "#" << buf[i] << "#";
                         buf[k] = 0;
-                    }
+                    }*/
+                    (*itF)->getClient()->fillContent(buf, ret);
+                    bzero(&buf, ret);
                     itF++;
                 }
                 else if (!ret)
                 {
                     //std::cout << "RET = 0\n";
                     (*itF)->getClient()->setTimer();
-                    int k = 0;
+                    /*int k = 0;
                     while (buf[k])
                     {
                         (*itF)->getClient()->fillContent(buf[k]);
                         //std::cout << "#" << buf[i] << "#";
                         buf[k++] = 0;
-                    }
+                    }*/
+                    //std::cout << "STRLEN = " << strlen(buf) << "\n";
+                    size_t buflen = strlen(buf);
+                    (*itF)->getClient()->fillContent(buf, buflen);
+                    bzero(&buf, ret);
                     (*itF)->getClient()->setStatus(2);
                     (*itF)->getClient()->formAnswer();
                     itF = allfiles.erase(itF);
@@ -375,13 +385,13 @@ public:
             else
                 itF++;
         }
-        //std::cout << "FInished to read requests\n";
+        std::cout << "Finished to read requests\n";
     }
     
     
     void sendAnswer()
     {
-        //std::cout << "Send answer block\n";
+        std::cout << "Send answer block\n";
         int descr;
         std::vector<FileUpload *>::iterator itF = allfiles.begin();
         while (itF != allfiles.end())
@@ -436,7 +446,7 @@ public:
             }
             itC++;
         }
-        //std::cout << "End answer block\n";
+        std::cout << "End answer block\n";
     }
     
     void cleaner()

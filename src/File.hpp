@@ -54,6 +54,8 @@ public:
     }
     ~FileUpload()
     {
+        content.clear();
+        filepath.clear();
         close(descriptor);
     }
     
@@ -64,7 +66,7 @@ public:
         //std::cout << "FILE WRITE : size = " << size << " | pos = " << pos << " | result = " << size - pos << "\n";
         //std::cout << "To write:\n" << content.substr(pos, size - pos).c_str() << "\nEND\n";
         int send_size = write(descriptor, content.substr(pos, size - pos).c_str(), size - pos);
-        //std::cout << "File writing returned : " << send_size << " | Descriptor = " << descriptor << "\n";
+        std::cout << "File writing returned : " << send_size << " | Descriptor = " << descriptor << "\n";
         if (send_size <= 0)
         {
             status = -2;
@@ -77,6 +79,7 @@ public:
             status = 1;
             pos = 0;
             size = 0;
+            content.clear();
         }
     }
     

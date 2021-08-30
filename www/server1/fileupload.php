@@ -42,7 +42,7 @@
     if($file == false)
     {
         echo "PHP: File uploading error 1";
-        return ;
+        exit ;
     }
     
     while (!feof($file))
@@ -56,7 +56,7 @@
     if ($pos2 == false)
     {
         echo "PHP: File uploading error 2";
-        return ;
+        exit ;
     }
     $boundary = substr($content, 0, $pos2);
     #echo "BOUNDARY: " . $boundary;
@@ -65,7 +65,7 @@
     if ($pos == false)
     {
         echo "PHP: File uploading error 3";
-        return ;
+        exit ;
     }
             
     $pos = $pos + 10;
@@ -73,7 +73,7 @@
     if ($pos2 == false)
     {
         echo "PHP: File uploading error 4";
-        return ;
+        exit ;
     }
     $filename2 .= str_replace(' ', '_', rus2translit(substr($content, $pos, $pos2 - $pos)));
     #$filename2 .= mb_substr($tmpstr, 0, strlen($tmpstr), "UTF-8");
@@ -83,7 +83,7 @@
     if ($pos == false)
     {
         echo "PHP: File uploading error 5";
-        return ;
+        exit ;
     }
     $pos = $pos + 4;
     $length = $length - $pos;
@@ -97,7 +97,8 @@
     $result = fwrite($newfile, $newcontent);
     fclose($newfile);
     if ($result == false)
-        echo "Error on file writing. Path: "  . "/uploads/" . $filename2;
+        echo "Error on file writing. Name: "  . $filename2;
     else
-        echo "Uploadded successfully. File path: " . "/uploads/" . $filename2;
+        echo "Uploadded successfully. File name: " . $filename2;
+    exit ;
 ?>
