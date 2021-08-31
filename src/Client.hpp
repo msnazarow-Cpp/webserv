@@ -20,6 +20,7 @@
 #include "File.hpp"
 #include "Parser.hpp"
 #include "ServerBlock.hpp"
+#include "TextHolder.hpp"
 
 class Client{
 
@@ -30,7 +31,7 @@ public:
 private:
     int descriptor;
     //std::stringstream buffer;
-    std::string buffer;
+    //std::string buffer;
 
     //std::ostringstream response;
     std::string response;
@@ -39,7 +40,7 @@ private:
     int code;
     
     size_t requestLen;
-    std::string content;
+    //std::string content;
     std::string cgi;
     
     int requestType;
@@ -66,6 +67,7 @@ private:
     struct timeval timer;
     ServerBlock *s_block;
 
+    TextHolder *buffer;
 
     //bool fromCgi;
 public:
@@ -100,8 +102,11 @@ public:
         ++count;
         ++active;
         s_block = 0;
+        fileRead = 0;
+        fileWrite = 0;
+        buffer = new TextHolder();
         requestIsChunked = false;
-        buffer = "";
+        //buffer = "";
         response = "";
         //fromCgi = false;
     }
@@ -119,14 +124,15 @@ public:
     {
         //std::cout << "COMPLETE RESET of " << descriptor << "\n";
         //buffer.str("");
-        buffer.clear();
+        //buffer.clear();
         requestBody.clear();
         response.clear();
-        content.clear();
+        //content.clear();
         //response.str("");
         path.str("");
 
         requestBodySize = 0;
+        requestLen = 0;
         cgi.clear();
         target.clear();
         requestProtocol.clear();
@@ -151,15 +157,16 @@ public:
         s_block = 0;
         resetFile(&fileWrite);
         resetFile(&fileRead);
+        resetBuffer();
         if (keepAlive)
         {
             status = 0;
-            std::cout << "Connection kept\n";
+            //std::cout << "Connection kept\n";
         }
         else
         {
             status = -1;
-            std::cout << "Connection broken\n";
+            //std::cout << "Connection broken\n";
         }
     }
     
@@ -178,12 +185,12 @@ public:
         return (buffer.str());
     }*/
     
-    void fillBuffer(const char *c, int buf_size)
+    /*void fillBuffer(const char *c, int buf_size)
     {
         //buffer += c;
         buffer.append(c, static_cast<size_t>(buf_size));
         //std::cout << "Buffer size now is " << buffer.size() << "\n" << buffer << "\n";
-    }
+    }*/
     
     int getType()
     {
@@ -229,59 +236,59 @@ public:
     {
         switch (code){
             case 100:{
-                content = "<h1>100: Continue</h1>";
+                buffer->fillContent("<h1>100: Continue</h1>");
                 break;
             }
             case 202:{
-                content = "<h1>202: Accepted</h1>";
+                buffer->fillContent("<h1>202: Accepted</h1>");
                 break;
             }
             case 204:{
-                content = "<h1>204: No content</h1>";
+                buffer->fillContent("<h1>204: No content</h1>");
                 break;
             }
             case 400:{
-                content = "<h1>400: Bad request</h1>";
+                buffer->fillContent("<h1>400: Bad request</h1>");
                 break;
             }
             case 401:{
-                content = "<h1>401: Authorization required</h1>";
+                buffer->fillContent("<h1>401: Authorization required</h1>");
                 break;
             }
             case 403:{
-                content = "<h1>403: Access forbidden</h1>";
+                buffer->fillContent("<h1>403: Access forbidden</h1>");
                 break;
             }
             case 404:{
-                content = "<h1>404: Not Found</h1>";
+                buffer->fillContent("<h1>404: Not Found</h1>");
                 break;
             }
             case 405:{
-                content = "<h1>405: Request type not allowed</h1>";
+                buffer->fillContent("<h1>405: Request type not allowed</h1>");
                 break;
             }
             case 408:{
-                content = "<h1>408: Timeout</h1>";
+                buffer->fillContent("<h1>408: Timeout</h1>");
                 break;
             }
             case 411:{
-                content = "<h1>411: Length required</h1>";
+                buffer->fillContent("<h1>411: Length required</h1>");
                 break;
             }
             case 413:{
-                content = "<h1>413: Payload Too Large</h1>";
+                buffer->fillContent("<h1>413: Payload Too Large</h1>");
                 break;
             }
             case 422:{
-                content = "<h1>422: Unprocessable entity</h1>";
+                buffer->fillContent("<h1>422: Unprocessable entity</h1>");
                 break;
             }
             case 500:{
-                content = "<h1>500: Internal server error</h1>";
+                buffer->fillContent("<h1>500: Internal server error</h1>");
                 break;
             }
             case 501:{
-                content = "<h1>501: Not implemented</h1>";
+                buffer->fillContent("<h1>501: Not implemented</h1>");
                 break;
             }
         }
@@ -290,14 +297,15 @@ public:
     bool handleErrorPage()//, ServerBlock *block)
     {
         //std::cout << "Handle error\n";
-        buffer.clear();
+        //buffer.clear();
+        resetBuffer();
         if (!s_block)
         {
             status = -1;
             return (true);
         }
-        if (code == 100 || code == 204 || code == 405)
-            keepAlive = true;
+        //if (code == 100 || code == 204 || code == 405)
+        //    keepAlive = true;
         std::string error = s_block->getErrorPage(code);
         //std::cout << "Error: " << error << "\n";
         if (error.empty())
@@ -309,6 +317,8 @@ public:
         else
         {
             try{
+                if (fileRead)
+                    resetFile(&fileRead);
                 fileRead = new FileUpload(error, 0, "", this, true);//, false);
                 fileRead->setStatus(2);
                 status = 6;
@@ -326,7 +336,7 @@ public:
         size_t pos;
         size_t pos2;
         //std::cout << "PARSE HEADER\n";
-        std::cout << "PARSE HEADER\nREQUEST:\n" << buffer.substr(0, 500) << "\nEND\n";
+        //std::cout << "PARSE HEADER\nREQUEST:\n" << buffer->getBuffer().substr(0, 500) << "\nEND\n";
         if (requestType == 1 || requestType == 4)
             pos = 4;
         else if (requestType == 2)
@@ -344,7 +354,7 @@ public:
         //std::cout << "METHOD: #" << envs["REQUEST_METHOD"] << "#\n";
 
         //PATH & TARGET
-        pos2 = buffer.find(" ", pos);
+        pos2 = buffer->getBuffer().find(" ", pos);
         if (pos2 == std::string::npos)
         {
             /*std::cout << "Wrong request header (target)\n";
@@ -353,7 +363,7 @@ public:
             code = 400;
             return (handleErrorPage());//, &(result->second)));
         }
-        path << buffer.substr(pos, pos2 - pos);
+        path << buffer->getBuffer().substr(pos, pos2 - pos);
         target = path.str();
         envs["REQUEST_URI"] = target;
         size_t pos3 = path.str().find("?", 0);
@@ -380,7 +390,7 @@ public:
 
         //PROTOCOL
         pos2++;
-        pos = buffer.find("\r\n", pos2);
+        pos = buffer->getBuffer().find("\r\n", pos2);
         if (pos == std::string::npos)
         {
             /*std::cout << "Wrong request header (protocol)\n";
@@ -389,7 +399,7 @@ public:
             code = 400;
             return (handleErrorPage());//, &(result->second)));
         }
-        requestProtocol = buffer.substr(pos2, pos - pos2);
+        requestProtocol = buffer->getBuffer().substr(pos2, pos - pos2);
         //std::cout << "Request protocol: " << requestProtocol << "\n";
 
         //END FOR GET (without session)
@@ -398,7 +408,7 @@ public:
 
         //HOSTNAME
         pos += 2;
-        pos2 = buffer.find("Host: ", pos);
+        pos2 = buffer->getBuffer().find("Host: ", pos);
         if (pos2 == std::string::npos)
         {
             /*std::cout << "Wrong request header (host)\n";
@@ -408,18 +418,18 @@ public:
             return (handleErrorPage());//, &(result->second)));
         }
         pos2 += 6;
-        pos = buffer.find(":", pos2);
-        pos3 = buffer.find("\r\n", pos2);
+        pos = buffer->getBuffer().find(":", pos2);
+        pos3 = buffer->getBuffer().find("\r\n", pos2);
         std::string requestHost;
         std::stringstream streamPort;
         int requestPort;
         if (pos != std::string::npos && pos < pos3)
         {
-            requestHost = buffer.substr(pos2, pos - pos2);
+            requestHost = buffer->getBuffer().substr(pos2, pos - pos2);
 
             //PORT
             pos++;
-            pos2 = buffer.find("\r\n", pos);
+            pos2 = buffer->getBuffer().find("\r\n", pos);
             if (pos2 == std::string::npos)
             {
                 /*std::cout << "Wrong request header (port)\n";
@@ -429,13 +439,13 @@ public:
                 return (handleErrorPage());//, &(result->second)));
             }
 
-            streamPort << buffer.substr(pos, pos2 - pos);
+            streamPort << buffer->getBuffer().substr(pos, pos2 - pos);
 
             streamPort >> requestPort;
         }
         else if (pos3 != std::string::npos)
         {
-            requestHost = buffer.substr(pos2, pos3 - pos2);
+            requestHost = buffer->getBuffer().substr(pos2, pos3 - pos2);
             streamPort << "80";
             streamPort >> requestPort;
             pos2 = pos3 + 2;
@@ -455,13 +465,13 @@ public:
         streamPort.str("");
         //std::cout << "Request port: " << envs["SERVER_PORT"] << "\n";
 
-        pos = buffer.find("Connection: ", pos2);
+        pos = buffer->getBuffer().find("Connection: ", pos2);
         if (pos == std::string::npos)
             keepAlive = true;
         else
         {
             pos += 12;
-            pos2 = buffer.find("\r\n", pos);
+            pos2 = buffer->getBuffer().find("\r\n", pos);
             if (pos2 == std::string::npos)
             {
                 keepAlive = true;
@@ -469,7 +479,7 @@ public:
             }
             else
             {
-                if ((!buffer.compare(pos, pos2 - pos, "close")))
+                if ((!buffer->getBuffer().compare(pos, pos2 - pos, "close")))
                 {
                     keepAlive = false;
                     envs["HTTP_CONNECTION"] = "close";
@@ -507,15 +517,19 @@ public:
         size_t i = 0;
         for (i = 0; i < target.size(); i++)
         {
-            if (target[i] != '/')
-                break ;
+            if (target[i] != '/') {
+                //std::cout << "Break on pos " << i << "\n";
+                break;
+            }
         }
+        bool correctPath = false;
         if (i > 1)
         {
+            correctPath = true;
             std::string tmp = target.substr(i - 1, target.size() + 1 - i);
             target = tmp;
         }
-
+        //std::cout << "\nTARGET: " << target << "\n\n";
         path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked, 0);
 
         //std::cout << "CGI = " << cgi << "\nPATH = " << path.str() << "\n";
@@ -528,7 +542,7 @@ public:
 
         
         
-        pos = buffer.find("\r\n\r\n", pos2);
+        pos = buffer->getBuffer().find("\r\n\r\n", pos2);
         if (pos == std::string::npos)
         {
             /*std::cout << "Wrong request header (header limits)\n";
@@ -543,8 +557,9 @@ public:
         {
             if (!remove(path.str().c_str()))
             {
-                buffer.clear();
-                content = "<h1>File " + target + " deleted successfully</h1>";
+                //buffer.clear();
+                resetBuffer();
+                buffer->fillContent("<h1>File " + target + " deleted successfully</h1>");
                 code = 200;
                 status = 2;
                 formAnswer();
@@ -561,7 +576,7 @@ public:
             code = 204;
             return (handleErrorPage());
         }
-        std::string headerTmp = buffer.substr(pos2, pos - pos2 + 2);
+        std::string headerTmp = buffer->getBuffer().substr(pos2, pos - pos2 + 2);
         //std::cout << "HEADER REST:\n" << headerTmp << "\nEND\n";
         pos2 = 2;
         while ((pos3 = headerTmp.find("\r\n", pos2)) != std::string::npos)
@@ -607,11 +622,15 @@ public:
             target = newRequest;
         }*/
 
-        /*size_t posCur = 0, posLast = 0;
-        while ((posCur = target.find("/", posLast)) != std::string::npos)
-            posLast = posCur + 1;
-        if (posLast)
-            envs["PATH_INFO"] = target.substr(posLast - 1, target.size() - posLast + 1);*/
+        if (correctPath) {
+            size_t posCur = 0, posLast = 0;
+            while ((posCur = target.find("/", posLast)) != std::string::npos)
+                posLast = posCur + 1;
+            if (posLast)
+                envs["PATH_INFO"] = target.substr(posLast - 1, target.size() - posLast + 1);
+            else
+                envs["PATH_INFO"] = target;
+        }
         /*if (posLast)
         {
             size_t len1 = s_block->getRoot().size();
@@ -619,7 +638,7 @@ public:
             size_t len2 = pathTmp.size();
             envs["PATH_INFO"] = pathTmp.substr(len1, len2 - len1);
         }*/
-        //else
+        else
             envs["PATH_INFO"] = target;
 
         envs.insert(std::pair<std::string, std::string>("SERVER_PROTOCOL", "HTTP/1.1"));
@@ -631,6 +650,7 @@ public:
 
         envs["PATH_TRANSLATED"] = envs["PATH_INFO"];
         envs["REDIRECT_STATUS"] = "true";
+        envs["HTTP_ROOT"] = s_block->getRoot();
         
         //std::cout << "PATH INFO: " << envs["PATH_INFO"] << "\n";
 
@@ -644,7 +664,7 @@ public:
                 code = 413;
                 return (handleErrorPage());//, &(result->second)));
             }
-            pos2 = buffer.find("\r\n\r\n");
+            pos2 = buffer->getBuffer().find("\r\n\r\n");
             if (pos2 == std::string::npos)
             {
                 code = 400;
@@ -653,8 +673,9 @@ public:
             pos2 += 4;
 
             //std::cout << "SGI run\n";
-            requestBody = buffer.substr(pos2, getLen());
-            buffer.clear();
+            requestBody = buffer->getBuffer().substr(pos2, getLen());
+            //buffer.clear();
+            resetBuffer();
 
             try{
                 //std::cout << "CGI HERE1\n";
@@ -695,7 +716,7 @@ public:
         }
         else if (requestIsChunked)
         {
-            pos2 = buffer.find("\r\n\r\n");
+            pos2 = buffer->getBuffer().find("\r\n\r\n");
             if (pos2 == std::string::npos)
             {
                 code = 400;
@@ -705,33 +726,36 @@ public:
 
             int chunkSize = 0;
             std::stringstream chunks;
-            while ((pos = buffer.find("\r\n", pos2)) != std::string::npos)
+            while ((pos = buffer->getBuffer().find("\r\n", pos2)) != std::string::npos)
             {
                 std::stringstream lenConverter;
 
                 //std::cout << "HEX SIZE IS " << request.substr(pos2, pos - pos2) << "\n";
-                lenConverter << buffer.substr(pos2, pos - pos2);
+                lenConverter << buffer->getBuffer().substr(pos2, pos - pos2);
                 lenConverter >> std::hex >> requestBodySize;
                 //std::cout << "Converted body size = " << requestBodySize << "\n";
                 lenConverter.str("");
                 chunkSize += requestBodySize;
                 pos2 = pos + 2;
-                chunks << buffer.substr(pos2, requestBodySize);
+                chunks << buffer->getBuffer().substr(pos2, requestBodySize);
                 pos2 = pos2 + requestBodySize + 2;
             }
-            buffer.clear();
+            //buffer.clear();
+
             if (chunkSize < 0)
             {
                 code = 500;
+                chunks.str("");
                 //test500(2);
                 return (handleErrorPage());
             }
             else if (maxSize > -1 && chunkSize > maxSize)
             {
                 code = 413;
+                chunks.str("");
                 return (handleErrorPage());
             }
-
+            resetBuffer();
             std::stringstream filename;
             //std::string filename = path.str();
             //std::cout << "filename is " << filename;
@@ -789,10 +813,11 @@ public:
                 envs["HTTP_BODY"] = "";
                 envs["HTTP_BUFFER_PATH"] = s_block->getBuffer();
                 envs["HTTP_UPLOADS_PATH"] = s_block->getUploadsDir();
-                std::cout << "ENVPATH: " << envs["HTTP_UPLOADS_PATH"] << "\n";
+                //std::cout << "ENVPATH: " << envs["HTTP_UPLOADS_PATH"] << "\n";
                 setStatus(3);
                 filename.str("");
-                buffer.clear();
+                //buffer.clear();
+                resetBuffer();
             } catch (Exception &e){
                 /*std::cout << e.what() << "\n";
                 setStatus(-1);
@@ -814,6 +839,7 @@ public:
             fileRead = new FileUpload(path.str(), 0, "", this, true);//, false);
             fileRead->setStatus(2);
             status = 6;
+            resetBuffer();
         }catch(Exception &e){
             /*std::cout << e.what() << "\n";
             setStatus(-1);
@@ -855,17 +881,13 @@ public:
     
     void cgiResponseSimple()
     {
-        //file->resetDescriptor();
         int enter;
 
         if (!requestIsChunked)
         {
-            std::cout << "CLassic enter\n";
             enter = open(".enter", O_RDWR | O_CREAT, S_IRWXG | S_IRWXU | S_IRWXO);
             if (enter < 0)
             {
-                //std::cout << "ENTER FILE ERROR\n";
-                //status = -1;
                 code = 500;
                 //test500(6);
                 handleErrorPage();
@@ -874,7 +896,6 @@ public:
         }
         else
         {
-            std::cout << "Tester enter\n";
             if (!fileWrite || !fileWrite->resetDescriptor())
             {
                 code = 500;
@@ -882,16 +903,9 @@ public:
                 handleErrorPage();
                 return ;
             }
-            //std::cout << "Tester enter done\n";
         }
-        /*fileRead->descriptor = open(FileRead->filepath);
-        if (fileRead->getDescriptor() < 0)
-        {
-            std::cout << "PIPE FILE ERROR\n";
-            status = -1;
-            return ;
-        }*/
-        std::cout << "CGI is " << cgi << "\n";
+
+        //std::cout << "CGI is " << cgi << "\n";
         std::vector<std::string> args_cpp;
         args_cpp.push_back(cgi);
         args_cpp.push_back(path.str());
@@ -902,8 +916,6 @@ public:
         pid_t pid = fork();
         if (pid < 0)
         {
-            //std::cout << "Fork error\n";
-            //status = -1;
             code = 500;
             //test500(8);
             handleErrorPage();//, &(result->second));
@@ -926,40 +938,18 @@ public:
             waitpid(pid, &result, 0);//&result
             if (!requestIsChunked)
                 close(enter);
-            //else
-            //    fromCgi = true;
-            std::cout << "Waitpid\n";
-            //std::cout << "Check PATH: " << fileRead->getPath() << "\n";
-            /*std::ifstream f(fileRead->getPath().c_str());
-            if (f.good())
+            //std::cout << "Waitpid\n";
+            bool ret = fileRead->resetDescriptor();
+            if ((result || !ret) && fileWrite)
             {
-                std::string str((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-                content = str;
-                //std::cout << "CONTENT:\n" << content << "\nEnd\n";
-                code = 200;
+                //std::cout << "result = " << result << " | ret = " << ret << "\n";
+                fileRead->setStatus(-2);
+                return ;
             }
-            else
+            else if ((result || !ret) && !fileWrite)
             {
                 code = 500;
-                
-            }
-            f.close();
-            //std::cout << "\nADDRESS IS: " << path.str() << "\n";
-            status = 2;
-            formAnswer();*/
-            
-            
-            
-            //std::cout << "PATH: " << fileRead->filepath << "\n";
-            //fileRead->descriptor = open(fileRead->filepath, O_RDONLY);
-            bool ret = fileRead->resetDescriptor();
-            if (result || !ret)
-            {
-                //std::cout << "828: PIPE FILE ERROR: | result = " << result << " | reset = " << ret << "\n";
-                //status = -1;
-                fileRead->setStatus(-2);
-                //handleErrorPage(code);//, &(result->second));
-                //status = -3;
+                handleErrorPage();
                 return ;
             }
             fileRead->setStatus(2);
@@ -969,7 +959,7 @@ public:
     
     void formAnswer()
     {
-        std::cout << "FORM ANSWER\n";
+        //std::cout << "FORM ANSWER\n";
         if (status == 4)
         {
             if (requestType != 4 && !cgi.empty())
@@ -993,7 +983,8 @@ public:
         /*response << "HTTP/1.1 " << code << " OK\r\n";
         response << "Cache-Control: no-cache, private\r\n";
         response << "Content-Type: text/html\r\n";*/
-        response = "HTTP/1.1 " + codeStr.str() + " OK\r\nCache-Control: no-cache, private\r\nContent-Type: text/html\r\n";
+        //response = "HTTP/1.1 " + codeStr.str() + " OK\r\nCache-Control: no-cache, private\r\nContent-Type: text/html\r\n";
+        buffer->fillBuffer("HTTP/1.1 " + codeStr.str() + " OK\r\nCache-Control: no-cache, private\r\nContent-Type: text/html\r\n");
         codeStr.str("");
 
         //if (!keepAlive)
@@ -1005,47 +996,48 @@ public:
         }
         else
         {*/
-            size_t pos = content.find("\r\n\r\n", 0);
+            size_t pos = buffer->getContent().find("\r\n\r\n", 0);
             if (pos != std::string::npos)
             {
                 pos += 4;
-                size_t newsize = content.size() - pos;
+                size_t newsize = buffer->getContent().size() - pos;
                 codeStr << newsize;
-                response += "Content-Length: " + codeStr.str() + "\r\n";
+                buffer->fillBuffer("Content-Length: " + codeStr.str() + "\r\n");
             }
             else {
-                codeStr << content.size();
-                response += "Content-Length: " + codeStr.str() + "\r\n\r\n";
+                codeStr << buffer->getContent().size();
+                buffer->fillBuffer("Content-Length: " + codeStr.str() + "\r\n\r\n");
             }
             codeStr.str("");
         //}
         //if (code != 204)
-        response += content;
+        //response += content;
+        buffer->concatenate();
         /*if (fromCgi)
             response << "\r\n\r\n";*/
-        responseSize = response.size() + 1;
+        responseSize = buffer->getBuffer().size() + 1;
         /*if (requestType == 1)
             status = 2;*/
-        std::cout << "End form answer\n";
+        //std::cout << "End form answer\n";
     }
     
     void handleRequest(Parser *parser)
     {
         //std::cout << "HANDLE REQUEST\n";
         std::string host;
-        size_t pos = buffer.find("\r\nHost: ", 0);
+        size_t pos = buffer->getBuffer().find("\r\nHost: ", 0);
         if (pos != std::string::npos)
         {
             pos += 8;
-            size_t pos2 = buffer.find(":", pos);
-            size_t pos3 = buffer.find("\r\n", pos);
+            size_t pos2 = buffer->getBuffer().find(":", pos);
+            size_t pos3 = buffer->getBuffer().find("\r\n", pos);
             if (pos2 != std::string::npos && pos3 != std::string::npos)
             {
                 //std::cout << "Port found\n";
                 if (pos2 < pos3)
-                    host = buffer.substr(pos, pos2 - pos);
+                    host = buffer->getBuffer().substr(pos, pos2 - pos);
                 else
-                    host = buffer.substr(pos, pos3 - pos);
+                    host = buffer->getBuffer().substr(pos, pos3 - pos);
             }
             /*else if (pos3 == std::string::npos)
             {
@@ -1082,11 +1074,11 @@ public:
     void sendResponse()
     {
         //std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
-        //std::cout << "short:\n###\n" << response.str().substr(responsePos, 500) << "\n###\n";
+        //std::cout << "short:\n###\n" << buffer->getBuffer().substr(responsePos, 500) << "\n###\n";
         //std::cout << "To send:\n" << response.str().substr(responsePos, responseSize - responsePos).c_str() << "\nEND\n";
         std::cout << "Send CODE " << code << "\n";
-        int send_size = send(descriptor, response.substr(responsePos, responseSize - responsePos - 1).c_str(), responseSize - responsePos - 1, 0);
-        std::cout << "Send returned : " << send_size << "\n";
+        int send_size = send(descriptor, buffer->getBuffer().substr(responsePos, responseSize - responsePos - 1).c_str(), responseSize - responsePos - 1, 0);
+        //std::cout << "Send returned : " << send_size << "\n";
         if (send_size <= 0)
         {
             //std::cout << "Error on response sending: " << send_size << "\n";
@@ -1120,21 +1112,21 @@ public:
         if (!getType())
         {
             //std::cout << "Is FULL check type\n";
-            if (!buffer.compare(0, 4, "GET "))
+            if (!buffer->getBuffer().compare(0, 4, "GET "))
             {
                 //requestMethod = "GET";
                 envs.insert(std::pair<std::string, std::string>("REQUEST_METHOD", "GET"));
                 setType(1);
             }
-            else if (!buffer.compare(0, 5, "POST "))
+            else if (!buffer->getBuffer().compare(0, 5, "POST "))
             {
                 //requestMethod = "POST";
                 envs.insert(std::pair<std::string, std::string>("REQUEST_METHOD", "POST"));
                 setType(2);
             }
-            else if (!buffer.compare(0, 7, "DELETE "))
+            else if (!buffer->getBuffer().compare(0, 7, "DELETE "))
                 setType(3);
-            else if (!buffer.compare(0, 4, "PUT "))
+            else if (!buffer->getBuffer().compare(0, 4, "PUT "))
             {
                 //requestMethod = "POST";
                 envs.insert(std::pair<std::string, std::string>("REQUEST_METHOD", "PUT"));
@@ -1143,7 +1135,7 @@ public:
             else
                 setType(0);
         }
-        if (((!getType() || getType() == 1 || getType() == 3) && ends_with(buffer, "\r\n\r\n")))
+        if (((!getType() || getType() == 1 || getType() == 3) && ends_with(buffer->getBuffer(), "\r\n\r\n")))
             return (true);
         size_t pos = 5;
         size_t pos2;
@@ -1151,31 +1143,31 @@ public:
         {
             //std::cout << "Is FULL check non chunked\n";
             std::stringstream sizestream;
-            pos2 = buffer.find("\r\nContent-Length: ", pos);
+            pos2 = buffer->getBuffer().find("\r\nContent-Length: ", pos);
             if (pos2 != std::string::npos)
             {
                 pos2 += 18;
-                pos = buffer.find("\r\n", pos2);
+                pos = buffer->getBuffer().find("\r\n", pos2);
                 if (pos != std::string::npos)
                 {
-                    sizestream << buffer.substr(pos2, pos - pos2);
+                    sizestream << buffer->getBuffer().substr(pos2, pos - pos2);
                     //envs.insert(std::pair<std::string, std::string>("CONTENT_LENGTH", sizestream.str()));
                     sizestream >> requestBodySize;
-                    std::cout << "SIZE = " << requestBodySize << "\n";
+                    //std::cout << "SIZE = " << requestBodySize << "\n";
                     setLen(requestBodySize);
                 }
                 sizestream.str("");
             }
             else
             {
-                pos2 = buffer.find("\r\nTransfer-Encoding: ", pos);
+                pos2 = buffer->getBuffer().find("\r\nTransfer-Encoding: ", pos);
                 if (pos2 != std::string::npos)
                 {
                     pos2 += 21;
-                    pos =  buffer.find("\r\n", pos2);
+                    pos =  buffer->getBuffer().find("\r\n", pos2);
                     if (pos != std::string::npos)
                     {
-                        sizestream << buffer.substr(pos2, pos - pos2);
+                        sizestream << buffer->getBuffer().substr(pos2, pos - pos2);
                         std::string checkChunk = sizestream.str();
                         if (!checkChunk.compare("chunked"))
                             requestIsChunked = true;
@@ -1188,7 +1180,7 @@ public:
         if (requestIsChunked)
         {
             //std::cout << "Is FULL check chunked\n";
-            if (ends_with(buffer, "\r\n0\r\n\r\n"))
+            if (ends_with(buffer->getBuffer(), "\r\n0\r\n\r\n"))
             {
                 setStatus(1);
                 //std::cout << "PUT is full(chunked)\n";
@@ -1196,12 +1188,12 @@ public:
             }
             return (false);
         }
-        pos2 = buffer.find("\r\n\r\n", pos);
+        pos2 = buffer->getBuffer().find("\r\n\r\n", pos);
         if (pos2 == std::string::npos)
             return (false);
         pos2 += 4;
         //std::cout << "Length = " << buffer.length() << " | pos = " << pos2 << " | getLen = " << getLen() << "\n";
-        if (!requestIsChunked && buffer.length() - getLen() == pos2)
+        if (!requestIsChunked && buffer->getBuffer().length() - getLen() == pos2)
             return (true);
         //std::cout << "Is FULL end\n";
         return (false);
@@ -1247,15 +1239,15 @@ public:
         handleErrorPage();
         //std::cout << "Handle error end\n";
     }
-
+/*
     void fillContent(const char *c, int buf_size)
     {
         content.append(c, static_cast<size_t>(buf_size));
-    }
+    }*/
     
     void finishPipe()
     {
-        std::cout << "FINISH PIPE\n";
+        //std::cout << "FINISH PIPE\n";
         //fileRead->setStatus(2);
         //resetFile(&fileWrite);
         resetFile(&fileRead);
@@ -1289,6 +1281,17 @@ public:
     void setKeep(bool val)
     {
         keepAlive = val;
+    }
+
+    TextHolder *getBuffer()
+    {
+        return (buffer);
+    }
+
+    void resetBuffer()
+    {
+        delete buffer;
+        buffer = new TextHolder();
     }
 };
 

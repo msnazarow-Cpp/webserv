@@ -1,6 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
-#define BUFFERSIZE 1024*1024*10
+#define BUFFERSIZE 1024*1024
 #define TIMEOUT 120
 #include <sys/select.h>
 #include <iostream>
@@ -35,7 +35,7 @@ public:
     
     void refillSets()
     {
-        std::cout << "SET REFILL\n";
+        //std::cout << "SET REFILL\n";
         FD_ZERO(&read_current);
         FD_ZERO(&write_current);
         //std::cout << "Clients size = " << allclients.size() << "\n";
@@ -112,7 +112,7 @@ public:
                 else if ((*itC)->getFileWrite()->getStatus() == -2)
                     (*itC)->setStatus(-1);
             }
-            if ((*itC)->getStatus() == 2 || (*itC)->getStatus() == 4)// || (*itC)->getStatus() == -2)
+            if ((*itC)->getStatus() == 2 || (*itC)->getStatus() == 4)
                 FD_SET((*itC)->getDescriptor(), &write_current);
             itC++;
         }
@@ -251,7 +251,7 @@ public:
 
     void handleConnections()
     {
-        std::cout << "Handle connection\n";
+        //std::cout << "Handle connection\n";
         Port *curport;
         int descr;
         for (size_t i = 0; i < portsCount(); ++i)
@@ -275,7 +275,7 @@ public:
     
     void readRequests()
     {
-        std::cout << "READ REQUESTS BLOCK\n";
+        //std::cout << "READ REQUESTS BLOCK\n";
         ssize_t ret;
         int descr;
         std::vector<Client *>::iterator itC = allclients.begin();
@@ -283,12 +283,12 @@ public:
         {
             //curclient = allclients[i];
             descr = (*itC)->getDescriptor();
-            std::cout << "Check client for read: " << descr << " | status = " << (*itC)->getStatus() << "\n";
+            //std::cout << "Check client for read: " << descr << " | status = " << (*itC)->getStatus() << "\n";
             if (isSetRead(descr))// && !curclient->getStatus())
             {
-                std::cout << descr << "-client is readable\n";
-                ret = recv(descr, buf, BUFFERSIZE, 0);
-                std::cout << descr << ": Ret = " << ret << "\n";
+                //std::cout << descr << "-client is readable\n";
+                ret = read(descr, buf, BUFFERSIZE);//, 0);
+                //std::cout << descr << ": Ret = " << ret << "\n";
                 if (ret > 0)
                 {
                     (*itC)->setTimer();
@@ -297,7 +297,7 @@ public:
                         (*itC)->fillBuffer(buf[k]);
                         buf[k] = 0;
                     }*/
-                    (*itC)->fillBuffer(buf, ret);
+                    (*itC)->getBuffer()->fillBuffer(buf, ret);
                     bzero(&buf, ret);
                     //std::cout << "Buffer:\n" << readbufs[*it].str() << "\nEnd buffer\n";
                     if ((*itC)->is_full())
@@ -326,8 +326,8 @@ public:
                     delete (*itC);
                     itC = allclients.erase(itC);
                 }
-                /*else
-                    itC++;*/
+                //else
+                //    itC++;
             }
             else
                 itC++;
@@ -338,11 +338,11 @@ public:
         while (itF != allfiles.end())
         {
             descr = (*itF)->getDescriptor();
-            std::cout << "Check file for read: " << descr << " | status = " << (*itF)->getStatus() << "\n"; //" | path = " << file->getPath() << "\n";
+            //std::cout << "Check file for read: " << descr << " | status = " << (*itF)->getStatus() << "\n"; //" | path = " << file->getPath() << "\n";
             if (isSetRead(descr))
             {
                 ret = read(descr, buf, BUFFERSIZE);
-                std::cout << descr << " file : Ret = " << ret << "\n";
+                //std::cout << descr << " file : Ret = " << ret << " | PATH: " << (*itF)->getPath() << "\n";
                 if (ret > 0)
                 {
                     //std::cout << "RET = " << ret << "\n";
@@ -353,7 +353,7 @@ public:
                         //std::cout << "#" << buf[i] << "#";
                         buf[k] = 0;
                     }*/
-                    (*itF)->getClient()->fillContent(buf, ret);
+                    (*itF)->getClient()->getBuffer()->fillContent(buf, ret);
                     bzero(&buf, ret);
                     itF++;
                 }
@@ -370,7 +370,7 @@ public:
                     }*/
                     //std::cout << "STRLEN = " << strlen(buf) << "\n";
                     size_t buflen = strlen(buf);
-                    (*itF)->getClient()->fillContent(buf, buflen);
+                    (*itF)->getClient()->getBuffer()->fillContent(buf, buflen);
                     bzero(&buf, ret);
                     (*itF)->getClient()->setStatus(2);
                     (*itF)->getClient()->formAnswer();
@@ -378,26 +378,26 @@ public:
                 }
                 else if (ret < 0)
                 {
-                    std::cout << "Pipe read error\n";
+                    //std::cout << "Pipe read error\n";
                     itF = allfiles.erase(itF);
                 }
             }
             else
                 itF++;
         }
-        std::cout << "Finished to read requests\n";
+        //std::cout << "Finished to read requests\n";
     }
     
     
     void sendAnswer()
     {
-        std::cout << "Send answer block\n";
+        //std::cout << "Send answer block\n";
         int descr;
         std::vector<FileUpload *>::iterator itF = allfiles.begin();
         while (itF != allfiles.end())
         {
             descr = (*itF)->getDescriptor();
-            std::cout << "Check file for write: " << descr << " | status = " << (*itF)->getStatus() <<"\n";//" | client = " << file->getClient()->getDescriptor() << "\n";
+            //std::cout << "Check file for write: " << descr << " | status = " << (*itF)->getStatus() <<"\n";//" | client = " << file->getClient()->getDescriptor() << "\n";
             if (isSetWrite(descr))
             {
                 (*itF)->getClient()->setTimer();
@@ -411,7 +411,7 @@ public:
         while (itC != allclients.end())
         {
             descr = (*itC)->getDescriptor();
-            std::cout << "Check client for write: " << descr << " | status = " << (*itC)->getStatus() << "\n";
+            //std::cout << "Check client for write: " << descr << " | status = " << (*itC)->getStatus() << "\n";
             if (isSetWrite(descr))
             {
                 (*itC)->setTimer();
@@ -446,9 +446,9 @@ public:
             }
             itC++;
         }
-        std::cout << "End answer block\n";
+        //std::cout << "End answer block\n";
     }
-    
+
     void cleaner()
     {
         allfiles.clear();
