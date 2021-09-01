@@ -2,15 +2,25 @@
 <html>
 	<head>
   		<title>TRISTAGRAM </title>
+
+        <script language="JavaScript1.2" type="text/javascript">
+            function ReadCookie(){
+                //alert(document.cookie);
+                if (document.cookie != "") {
+                    cookies = document.cookie.split("=");
+                    document.Downloader.dwnload.value = cookies[1];
+                }
+                }
+        </script>
 	</head>
-	<body>
+	<body onload="ReadCookie()">
 		<center><img src="logo.jpeg"></center>
 		<h1>Best service for uploading your files for nothing</h1>
 		<form action="/fileupload.php" enctype="multipart/form-data" method="post">
 			<p>files: <input type="file" id="myFile" name="userfile" size="1"></p>
   			<input type="submit">
 		</form>
-        <form action="/filedownload.php" method="get">
+        <form name="Downloader" action="/filedownload.php" method="get">
             <input type="text" id="downloadname" name="dwnload">
             <button>Download</button>
         </form>

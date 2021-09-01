@@ -215,7 +215,7 @@ bool Client::parseHeader(Parser *parser)
     size_t pos;
     size_t pos2;
     //std::cout << "PARSE HEADER\n";
-    //std::cout << "PARSE HEADER\nREQUEST:\n" << buffer->getBuffer().substr(0, 500) << "\nEND\n";
+    //std::cout << "PARSE HEADER\nREQUEST:\n" << buffer->getBuffer().substr(0, 1500) << "\nEND\n";
     if (requestType == 1 || requestType == 4)
         pos = 4;
     else if (requestType == 2)
@@ -736,7 +736,7 @@ void Client::handleRequest(Parser *parser)
 void Client::sendResponse()
 {
     //std::cout << "SEND RESPONSE: size = " << responseSize << " | pos = " << responsePos << " | result = " << responseSize - responsePos << "\n";
-    //std::cout << "short:\n###\n" << buffer->getBuffer().substr(responsePos, 500) << "\n###\n";
+    //std::cout << "short:\n###\n" << buffer->getBuffer().substr(responsePos, 1500) << "\n###\n";
     //std::cout << "To send:\n" << response.str().substr(responsePos, responseSize - responsePos).c_str() << "\nEND\n";
     //std::cout << "Send CODE " << code << "\n";
     int send_size = send(descriptor, buffer->getBuffer().substr(responsePos, responseSize - responsePos - 1).c_str(), responseSize - responsePos - 1, 0);

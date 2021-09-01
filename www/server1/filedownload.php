@@ -7,6 +7,11 @@
         exit ;
     }
     $realname = substr($filename, $pos + 1);
+    if (empty($realname))
+    {
+        echo "PHP: No filename provided";
+        exit ;
+    }
     $isroot = getenv("UPLOADS_IS_ROOT");
     $filepath;
     if (strcmp($isroot, "1"))

@@ -76,7 +76,13 @@
         echo "PHP: File uploading error 4";
         exit ;
     }
-    $filename2 .= str_replace(' ', '_', rus2translit(substr($content, $pos, $pos2 - $pos)));
+    $namecontent = substr($content, $pos, $pos2 - $pos);
+    if (empty($namecontent))
+    {
+        echo "PHP: No file to upload";
+        exit ;
+    }
+    $filename2 .= str_replace(' ', '_', rus2translit($namecontent));
     #$filename2 .= mb_substr($tmpstr, 0, strlen($tmpstr), "UTF-8");
     #echo "FILENAME: " . $filename2;
         
@@ -106,6 +112,9 @@
     if ($result == false)
         echo "Error on file writing. Name: "  . $filename2;
     else
+    {
+        header('Set-Cookie:UploadedFile = ' . $filename2);
         echo "Uploadded successfully. File name: " . $filename2;
+    }
     exit ;
 ?>

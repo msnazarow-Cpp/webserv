@@ -36,7 +36,7 @@ ifeq ($(UNAME), Linux)
 	CFLAGS += -D LINUX=1
 endif
 
-$(NAME): DIR	$(OBJ)
+$(NAME): $(OBJ)
 	$(CXX) $(LDFLAGS) $(OBJ) $(INCLUDES) -o $(NAME)
 
 test: DIR $(TEST_OBJ)
@@ -45,7 +45,7 @@ test: DIR $(TEST_OBJ)
 bonus:
 	make make='make bonus' CPPFLAGS+=$(BFLAGS) LDFLAGS+=$(BFLAGS) all
 
-all: $(NAME)
+all: DIR $(NAME)
 
 DIR : 
 	mkdir -p obj
