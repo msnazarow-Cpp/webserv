@@ -92,8 +92,12 @@ Parser::Parser(char *confFileName, Server *server) {
                         {
                             if (tmp.server_name.empty())
                                 tmp.server_name.insert(IP);
-                            blocks.push_back(tmp);
-                            blocks.back().fillPorts(server);
+                            if (tmp.getTry) {
+                                blocks.push_back(tmp);
+                                blocks.back().fillPorts(server);
+                            }
+                            else
+                                std::cout << "Block " << tmp << "has been excluded from set because of error (no try files block)\n";
                         }
                         else
                             std::cout << "Block " << tmp << "has been excluded from set because of error\n";
@@ -120,6 +124,8 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForServerTryFiles;
                     } else if (str == "uploads_directory"){
                         tmp.status = waitForUploadsDirectory;
+                    } else if (str == "buffer_directory"){
+                        tmp.status = waitForBufferDirectory;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -144,6 +150,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForLocationClientMaxBodySize;
                     } else if (str == "try_files"){
                         tmp.status = waitForLocationTryFiles;
+                        tmp.getTry = true;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -381,6 +388,15 @@ Parser::Parser(char *confFileName, Server *server) {
                     tmp.uploads_directory = str;
                     break;
                 }
+                case waitForBufferDirectory: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    tmp.bufferDir = str;
+                    break;
+                }
             }
             if (str == ";")
             {
@@ -418,7 +434,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
     std::string out = "";
     struct stat statbuf;
 
-    //std::cout << "SEARCH: " << server_name << " | " << port << " | " << request << "\n";
     for (size_t i = 0; i < blocks.size(); ++i) {
         if (!blocks[i].server_name.count(server_name) || !blocks[i].listen.count(port))
             continue;
@@ -428,7 +443,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             if (loc.location.size() > 1 && hasEnding(request, loc.location[1]))
             {
                 cgi = loc.cgi_pass;
-                //std::cout << "parser CGI set to " << cgi << "\n";
                 break ;
             }
         }
@@ -437,7 +451,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             Location loc = block.locations[j];
             if (!locMethod)
                 locMethod = &loc;
-            //std::cout << "Check location: " << loc.location[0] << " for target " << request << "\n";
 
             if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
             hasEnding(request, loc.location[1]))){
@@ -446,18 +459,13 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                 {
                     for (std::vector<std::string>::iterator it = loc.location.begin(); it != loc.location.end(); it++)
                     {
-                        //std::cout << "CHECKING " << *it << " COMPARE TO " << request << "\n";
                         size_t dirSize = (*it).size();
-                        //std::cout << "COMPARISON: dirsize = " << dirSize << " | char = " << request[dirSize] << "\n";
-                        //std::cout << "RESULT = " << request.compare(0, dirSize, (*it)) << "\n";
                         if (!request.compare(0, dirSize, (*it)))
                         {
-                            //std::cout << "HERE30\n";
                             if (dirSize == request.size())
                             {
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
-                                //std::cout << "HERE32 | location set to " << loc.location[0] << " | max size = " << maxSize << "\n";
                                 out = loc.root;
                                 directory = out;
                                 request = "/";
@@ -468,7 +476,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                             {
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
-                                //std::cout << "HERE31 | location set to " << loc.location[0] << " | max size = " << maxSize << "\n";
                                 std::string tmp = request.substr(dirSize, request.size() - dirSize);
                                 request = tmp;
                                 directory = loc.root;
@@ -481,8 +488,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     }
                 }
 
-
-                //std::cout << "HERE1\n";
                 if (out.empty())
                 {
                     if (directory.empty())
@@ -490,21 +495,13 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     else
                         out = directory + request;
                 }
-                //std::cout << "HERE2 | out: " << out << "\n";
-                if (stat(out.c_str(), &statbuf)){//} && !chunked) {//TODO Теперь если try_files поместить в конфиге в самую первую локацию, cgi не будут работать - срабатывает строка 439, и проверка не переходит к следующей локации
-                    //std::cout << "HERE3\n";
-                    //bool checkEnding = false;
+                if (stat(out.c_str(), &statbuf)){
 
                     for (size_t k = 0; k < loc.try_files.size(); ++k) {
-                        //std::cout << "checking try_files\n";
                         if (hasEnding(request, loc.try_files[k]))
                         {
-                            //checkEnding = true;
                             if (!loc.cgi_pass.empty())
-                            {
                                 cgi = loc.cgi_pass;
-                                //std::cout << "2 parser CGI reset to " << cgi << "\n";
-                            }
                             break;
                         }
                         if (cgi.empty() && requestType != 4)
@@ -515,34 +512,21 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         }
                     }
                     if (!loc.try_files.size() && !loc.cgi_pass.empty())
-                    {
                         cgi = loc.cgi_pass;
-                        //std::cout << "3 parser CGI reset to " << cgi << "\n";
-                    }
-                    //std::cout << "HERE4\n";
                     if (cgi.empty() && requestType != 4)
                     {
                         isErrorPage = true;
                         code = 404;
-                        //std::cout << "END 404 HERE\n";
-                        /*if (block.error_page.count(404)){
-                            return (block.root + '/' + block.error_page[404]);
-                        }
-                        return "404";*/
                         return (block.getErrorPage(code));
                     }
                     isErrorPage = false;
                     return (out);
                 }
-                //std::cout << "HERE5\n";
                 if (S_ISDIR(statbuf.st_mode) && cgi.empty() && requestType != 4){
-                    //std::cout << "HERE6\n"; //|| (loc.location.size() > 1 && hasEnding(request, loc.location[1]))
                     if (request[request.size() - 1] != '/')
                         request.push_back('/');
-                    //std::cout << "HERE7\n";
                     for (size_t k = 0; k < loc.index.size(); ++k) {
                         out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked, locMethod);
-                        //std::cout << "check OUT: " << out << "\n";
                         if(code != 404) {
                             isErrorPage = false;
                             return (out);
@@ -551,44 +535,21 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                             try{
                                 return (IndexHtmlMaker::makeIndexFile(loc.root, request));
                             } catch (...){
-                                //return "505";
-                                //std::cout << "HERE22\n";
                                 isErrorPage = true;
                                 code = 505;
                                 return (block.getErrorPage(code));
                             }
                         } else {
-                            //std::cout << "HERE21\n";
                             code = 403;
                             isErrorPage = true;
-                            /*if (block.error_page.count(403)){
-                                return block.root + '/' + block.error_page[403];
-                            }
-                            else
-                                return "403";*/
                             return (block.getErrorPage(code));
                         }
                     }
                 }
-                //std::cout << "HERE8\n";
                 isErrorPage = false;
-                //cgi = loc.cgi_pass; // зачем тут геттер?
                 if (maxSize < 0)
-                {
                     maxSize = loc.client_max_body_size;
-                    //std::cout << "HERE34 | max size set to " << maxSize << "\n";
-                }
-                //std::cout << "HERE9 | max body size = " << maxSize << "\n";
-                //std::cout << "loc methods count = " << loc.methods.size() << "\n";
-                //std::cout << "Checking request types in loc " << locMethod << "\n";
                 switch (requestType) {
-                    /*case 0:{
-                        isLegit = false;
-                        code = 405;
-                        //return
-                        break ;
-                    }*/
-
                     case 1:{
                         if (locMethod->methods.count(GET))
                             isLegit = true;
@@ -596,7 +557,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         {
                             code = 405;
                             isLegit = false;
-                            //return
                         }
                         break ;
                     }
@@ -607,7 +567,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         {
                             code = 405;
                             isLegit = false;
-                            //return
                         }
                         break ;
                     }
@@ -618,7 +577,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         {
                             code = 405;
                             isLegit = false;
-                            //return
                         }
                         break ;
                     }
@@ -629,41 +587,29 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         {
                             code = 405;
                             isLegit = false;
-                            //return
                         }
                         break ;
                     }
                 }
-                //std::cout << "HERE10\n";
                 if (!isLegit)
                     out = block.getErrorPage(code);
                 return (out);
             }
         }
-        //std::cout << "HERE11\n";
         out = block.root + request;
-        //std::cout << "HERE12 | out: " << out << "\n";
         if (stat(out.c_str(), &statbuf))
         {
-            //std::cout << "HERE13\n";
             for (size_t k = 0; k < block.try_files.size(); ++k) {
                 out = getfilename(server_name, port, request + block.try_files[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked, locMethod);
                 if (code != 404) {
                     return (out);
                 }
             }
-            //std::cout << "HERE14\n";
             isErrorPage = true;
             code = 404;
-            /*if (block.error_page.count(404)){
-                return (block.root + '/' + block.error_page[404]);
-            }
-            return "404";*/
             return (block.getErrorPage(code));
         }
-        //std::cout << "HERE15\n";
         if (S_ISDIR(statbuf.st_mode)){
-            //std::cout << "HERE16\n";
             if (request[request.size() - 1] != '/')
                 request.push_back('/');
             for (size_t k = 0; k < block.index.size(); ++k) {
@@ -675,35 +621,24 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     return (out);
                 }
             }
-            //std::cout << "HERE17\n";
             if (block.autoindex){
                 try {
                     return (IndexHtmlMaker::makeIndexFile(block.root, request));
                 } catch (...) {
-                    //return ("505");
                     isErrorPage = true;
                     code = 505;
                     return (block.getErrorPage(code));
                 }
             }
-            //std::cout << "HERE18\n";
             code = 403;
             isErrorPage = true;
-            /*if (block.error_page.count(403)){
-                return block.root + '/' + block.error_page[403];
-            }
-            else
-                return "403";*/
             return (block.getErrorPage(code));
         }
-        //std::cout << "HERE19\n";
         isErrorPage = false;
         return (out);
     }
-    //std::cout << "HERE20\n";
     isErrorPage = true;
     code = 404;
-    //return ("404");
     return (blocks[0].getErrorPage(code));
 }
 

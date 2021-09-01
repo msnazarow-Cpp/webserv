@@ -48,6 +48,12 @@ int main (int argc, char *argv[])
     Parser *parser;
     try {
         parser = new Parser(arg, server);
+    } catch (Parser::ParserNotValidException &e) {
+        std::cout << "Exception during config parsing. Server stopped." << std::endl;
+        exit (1);
+    }
+
+    try {
         server->setParser(parser);
     } catch (Exception &e) {
         std::cout << e.what() << std::endl << "Exception during config parsing. Server stopped." << std::endl;

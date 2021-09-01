@@ -35,28 +35,49 @@ std::ostream &operator<<(std::ostream &os, const ServerBlock &d) {
 
 bool ServerBlock::createDirs()
 {
-
+    if (bufferDir.empty() || uploads_directory.empty())
+        return (false);
     //bufferDir = root + "/.buffer";
-    size_t pos1 = 0, pos2 = 0;
+    /*size_t pos1 = 0, pos2 = 0;
     while ((pos1 = root.find("/", pos2)) != std::string::npos)
         pos2 = pos1 + 1;
     bufferDir = "/goinfre/jnoma/buffers/" + root.substr(pos2, root.size() - pos2) + "/.buffer";
     std::cout << "Temp buffer dir: " << bufferDir << "\n";
-    const char *tmp = bufferDir.c_str();
-    mkdir(tmp, 0777);
+    const char *tmp = bufferDir.c_str();*/
     struct stat info;
+    std::string tmp;
+    if (bufferDir[0] == '.') {
+        std::string tmp2 = bufferDir.substr(1, bufferDir.size() - 1);
+        bufferDir.clear();
+        bufferDir = tmp2;
+        tmp2.clear();
+        tmp = (root + bufferDir);
+        bufferRoot = "1";
+    }
+    else {
+        tmp = bufferDir;
+        bufferRoot = "0";
+    }
+    mkdir(tmp.c_str(), 0777);
 
-    if(!(!stat(tmp, &info) && (info.st_mode & S_IFDIR)))
+    if(!(!stat(tmp.c_str(), &info) && (info.st_mode & S_IFDIR)))
         return (false);
-    
-    //uploadDir = root + "/uploads";
-    //const char *tmp2 = uploadDir.c_str();
 
-    std::string tmp2 = (root + uploads_directory);
-    //std::cout << "DIR: " << tmp2 << "\n";
-    mkdir(tmp2.c_str(), 0777);
+    if (uploads_directory[0] == '.') {
+        std::string tmp2 = uploads_directory.substr(1, uploads_directory.size() - 1);
+        uploads_directory.clear();
+        uploads_directory = tmp2;
+        tmp2.clear();
+        tmp = (root + uploads_directory);
+        uploadsRoot = "1";
+    }
+    else {
+        tmp = uploads_directory;
+        uploadsRoot = "0";
+    }
+    mkdir(tmp.c_str(), 0777);
 
-    if(!(!stat(tmp2.c_str(), &info) && (info.st_mode & S_IFDIR)))
+    if(!(!stat(tmp.c_str(), &info) && (info.st_mode & S_IFDIR)))
         return (false);
     return (true);
 }
@@ -72,9 +93,7 @@ void ServerBlock::fillPorts(Server *server)
             newport = new Port(*it);
             server->addPort(newport);
         }
-        //std::cout << "ADDED PORT " << *it << "\n";
         newport->addServerBlock(*this);
-        
     }
 }
 
@@ -88,7 +107,7 @@ std::string ServerBlock::getBuffer()
 }
 
 ServerBlock::ServerBlock()
-        :status(clean),server_name(),listen(),error_page(),root(),locations(),client_max_body_size(-1),index(),autoindex(){
+        :status(clean),server_name(),listen(),error_page(),root(),uploads_directory(""),locations(),client_max_body_size(-1),index(),bufferDir(""),autoindex(),getTry(false){
 }
 
 std::string ServerBlock::getErrorPage(size_t val)
@@ -101,4 +120,14 @@ std::string ServerBlock::getErrorPage(size_t val)
 
 std::string ServerBlock::getUploadsDir(){
     return (uploads_directory);
+}
+
+std::string &ServerBlock::getIsBufferRoot()
+{
+    return (bufferRoot);
+}
+
+std::string &ServerBlock::getIsUploadsRoot()
+{
+    return (uploadsRoot);
 }

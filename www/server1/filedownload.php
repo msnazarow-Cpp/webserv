@@ -7,7 +7,12 @@
         exit ;
     }
     $realname = substr($filename, $pos + 1);
-    $filepath = substr(getenv("HTTP_UPLOADS_PATH"), 1) . "/" . $realname;
+    $isroot = getenv("UPLOADS_IS_ROOT");
+    $filepath;
+    if (strcmp($isroot, "1"))
+        $filepath = "/" . substr(getenv("HTTP_UPLOADS_PATH"), 1) . "/" . $realname;
+    else
+        $filepath = substr(getenv("HTTP_UPLOADS_PATH"), 1) . "/" . $realname;
     #echo $realname . " | " . $filepath . " | ";
 
     if (file_exists($filepath) == false)

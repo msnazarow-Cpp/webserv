@@ -23,7 +23,7 @@ HFLAGS		= '-pedantic -Wshadow -Wformat=2 -Wfloat-equal\
 	-Wno-pointer-arith -Wno-cast-qual -Wno-unused-result -Wimplicit-fallthrough'
 endif
 MAKEFLAGS	= --no-print-directory
-OBJ 		:= main.o Parser.o ServerBlock.o Location.o IndexHtmlMaker.o
+OBJ 		:= main.o Parser.o ServerBlock.o Location.o IndexHtmlMaker.o Client.o Server.o Exception.o File.o Port.o TextHolder.o
 OBJ 		:= $(addprefix obj/,$(OBJ))
 TEST_OBJ	:= test.o IndexHtmlMaker.o
 TEST_OBJ 	:= $(addprefix obj/,$(TEST_OBJ))
@@ -36,19 +36,19 @@ ifeq ($(UNAME), Linux)
 	CFLAGS += -D LINUX=1
 endif
 
+$(NAME): DIR	$(OBJ)
+	$(CXX) $(LDFLAGS) $(OBJ) $(INCLUDES) -o $(NAME)
+
 test: DIR $(TEST_OBJ)
 	$(CXX) $(LDFLAGS) $(TEST_OBJ) $(INCLUDES) -o test
 
 bonus:
 	make make='make bonus' CPPFLAGS+=$(BFLAGS) LDFLAGS+=$(BFLAGS) all
 
-all: DIR $(NAME)
+all: $(NAME)
 
 DIR : 
 	mkdir -p obj
-
-$(NAME): $(OBJ) 
-	$(CXX) $(LDFLAGS) $(OBJ) $(INCLUDES) -o $(NAME)
 
 obj/%.o : src/%.cpp
 	$(CXX) $(CPPFLAGS) -c $(INCLUDES) $< -o $@

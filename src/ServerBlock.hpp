@@ -32,7 +32,8 @@ enum Status{
     waitForErrorPage,
     waitForServerTryFiles,
     waitForLocationTryFiles,
-    waitForUploadsDirectory
+    waitForUploadsDirectory,
+    waitForBufferDirectory
 };
 class ServerBlock
 {
@@ -46,6 +47,8 @@ public:
     std::string getBuffer();
     std::string getErrorPage(size_t val);
     std::string getUploadsDir();
+    std::string &getIsBufferRoot();
+    std::string &getIsUploadsRoot();
 
 private:
 
@@ -61,7 +64,6 @@ private:
     size_t client_max_body_size;
     std::vector<std::string>index;
     std::string bufferDir;
-    std::string uploadDir;
     boolPlusNil autoindex;
     friend bool operator ==(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator !=(const ServerBlock& lhs, const ServerBlock& rhs);
@@ -70,6 +72,9 @@ private:
     friend bool operator >(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator >=(const ServerBlock& lhs, const ServerBlock& rhs);
     friend std::ostream& operator<<(std::ostream &os, const ServerBlock& d);
+    bool getTry;
+    std::string bufferRoot;
+    std::string uploadsRoot;
 };
 
 std::ostream& operator<<(std::ostream &os, const ServerBlock& d);

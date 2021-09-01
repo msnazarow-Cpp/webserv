@@ -34,6 +34,7 @@
     $date = date_create();
     $filename = getenv("HTTP_BODY");
     $filepath = getenv("HTTP_BUFFER_PATH");
+    $uploadsdir = getenv("HTTP_UPLOADS_PATH");
     $filename2 = substr($filename, strlen($filepath) + 2) . "_" . date_timestamp_get($date) . "_";
     #echo $filename . " | " . $filename2 . " | ";
     $length = getenv("CONTENT_LENGTH");
@@ -93,7 +94,13 @@
         $length = $pos2 - $pos - 2;
     }
     $newcontent = substr($content, $pos, $length);
-    $newfile = fopen("uploads/" . $filename2, "w") or die("PHP: File uploading error");
+    #echo $uploadsdir . "/" . $filename2 . " | " . getenv("UPLOADS_IS_ROOT") . " # ";
+    $isroot = getenv("UPLOADS_IS_ROOT");
+    $newfile;
+    if (strcmp($isroot, "1"))
+        $newfile = fopen($uploadsdir . "/" . $filename2, "w") or die("PHP: File uploading error 6");
+    else
+        $newfile = fopen(substr($uploadsdir, 1, strlen($uploadsdir)) . "/" . $filename2, "w") or die("PHP: File uploading error 6");
     $result = fwrite($newfile, $newcontent);
     fclose($newfile);
     if ($result == false)

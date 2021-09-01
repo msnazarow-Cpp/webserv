@@ -17,7 +17,6 @@ class ServerBlock;
 class Parser {
 private:
     std::vector<ServerBlock> blocks;
-    // Server *server;
 public:
     class ParserNotValidException:std::exception{};
     Parser(char *confFileName, Server *server);
