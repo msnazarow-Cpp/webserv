@@ -26,6 +26,12 @@ Port::Port(int port): port(port)
 
 }
 
+Port::~Port()
+{
+    close(descriptor);
+    servers.clear();
+}
+
 void Port::addClient(int &client)
 {
     clients.push_back(&client);

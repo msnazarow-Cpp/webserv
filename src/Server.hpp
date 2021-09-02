@@ -18,9 +18,7 @@ private:
     fd_set read_current;
     fd_set write_current;
     std::vector<Client *> allclients;
-    std::vector<Client *> toerase;
     std::vector<FileUpload *> allfiles;
-    std::vector<FileUpload *> toeraseF;
     std::vector<Port *> allports;
     struct timeval timeout;
     char buf[BUFFERSIZE + 1];
@@ -49,6 +47,7 @@ public:
     void setParser(Parser *parser);
     bool isSetRead(int fd);
     bool isSetWrite(int fd);
+    void clearPorts();
 };
 
 #include "Client.hpp"

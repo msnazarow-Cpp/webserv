@@ -22,6 +22,7 @@ private:
     
 public:
     Port(int port);
+    ~Port();
     void addClient(int &client);
     int &getDescriptor();
     void addServerBlock(ServerBlock block);

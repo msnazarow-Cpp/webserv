@@ -24,20 +24,18 @@ Client::Client(Port *_port): cgi(""), port(_port), fileWrite(0), fileRead(0), s_
     gettimeofday(&timer, 0);
     buffer = new TextHolder();
     requestIsChunked = false;
-    ++count;
-    ++active;
+    //++count;
+    //++active;
 }
     
 Client::~Client()
 {
-    if (!keepAlive)
-        shutdown(descriptor, SHUT_RDWR);
     close(descriptor);
-    reset();
-    --active;
+    reset(true);
+    //--active;
 }
     
-void Client::reset()
+void Client::reset(bool val)
 {
     //std::cout << "COMPLETE RESET of " << descriptor << "\n";
     requestBody.clear();
@@ -63,7 +61,10 @@ void Client::reset()
     s_block = 0;
     resetFile(&fileWrite);
     resetFile(&fileRead);
-    resetBuffer();
+    if (!val)
+        resetBuffer();
+    else
+        delete buffer;
     if (keepAlive)
         status = 0;
     else
@@ -748,7 +749,7 @@ void Client::sendResponse()
     }
     responsePos += send_size;
     if (responsePos == responseSize - 1)
-        reset();
+        reset(false);
     //std::cout << "End send response\n";
 }
 

@@ -37,13 +37,6 @@ bool ServerBlock::createDirs()
 {
     if (bufferDir.empty() || uploads_directory.empty())
         return (false);
-    //bufferDir = root + "/.buffer";
-    /*size_t pos1 = 0, pos2 = 0;
-    while ((pos1 = root.find("/", pos2)) != std::string::npos)
-        pos2 = pos1 + 1;
-    bufferDir = "/goinfre/jnoma/buffers/" + root.substr(pos2, root.size() - pos2) + "/.buffer";
-    std::cout << "Temp buffer dir: " << bufferDir << "\n";
-    const char *tmp = bufferDir.c_str();*/
     struct stat info;
     std::string tmp;
     if (bufferDir[0] == '.') {
@@ -108,6 +101,22 @@ std::string ServerBlock::getBuffer()
 
 ServerBlock::ServerBlock()
         :status(clean),server_name(),listen(),error_page(),root(),uploads_directory(""),locations(),client_max_body_size(-1),index(),bufferDir(""),autoindex(),getTry(false){
+}
+
+ServerBlock::~ServerBlock()
+{
+    server_name.clear();
+    listen.clear();
+    methods.clear();
+    error_page.clear();
+    root.clear();
+    uploads_directory.clear();
+    locations.clear();
+    try_files.clear();
+    index.clear();
+    bufferDir.clear();
+    bufferRoot.clear();
+    uploadsRoot.clear();
 }
 
 std::string ServerBlock::getErrorPage(size_t val)

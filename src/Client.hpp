@@ -24,9 +24,9 @@
 
 class Client{
 
-public:
+/*public:
     static int count;
-    static int active;
+    static int active;*/
 
 private:
     int descriptor;
@@ -65,7 +65,7 @@ private:
 public:
     Client(Port *_port);
     ~Client();
-    void reset();
+    void reset(bool val);
     int &getDescriptor();
     int getType();
     void setType(int type);

@@ -647,3 +647,7 @@ size_t Parser::getBlocksCount()
     return (blocks.size());
 }
 
+Parser::~Parser()
+{
+    blocks.clear();
+}

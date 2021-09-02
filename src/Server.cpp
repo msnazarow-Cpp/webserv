@@ -6,7 +6,11 @@ Server::Server()
     timeout.tv_usec = 0;
 }
 
-Server::~Server(){}
+Server::~Server()
+{
+    cleaner();
+    clearPorts();
+}
 
 void Server::refillSets()
 {
@@ -78,7 +82,7 @@ void Server::refillSets()
     for (std::vector<Port *>::iterator it = allports.begin(); it != allports.end(); ++it)
         FD_SET((*it)->getDescriptor(), &read_current);
     //std::cout << "SET REFILLED\n";
-    std::cout << "Ports = " << portsCount() << " | Clients = " << clientsCount() << " | Files = " << filesCount() << " | max = " << getLastSock() <<"\n";
+    //std::cout << "Ports = " << portsCount() << " | Clients = " << clientsCount() << " | Files = " << filesCount() << " | max = " << getLastSock() <<"\n";
 }
 
 int Server::getLastSock()
@@ -339,4 +343,14 @@ bool Server::isSetRead(int fd)
 bool Server::isSetWrite(int fd)
 {
     return (FD_ISSET(fd, &write_current));
+}
+
+void Server::clearPorts()
+{
+    std::vector<Port *>::iterator it = allports.begin();
+    while (it != allports.end())
+    {
+        delete (*it);
+        it = allports.erase(it);
+    }
 }

@@ -1,30 +1,25 @@
 #include <fcntl.h>
-#include <netdb.h>
-#include <sys/select.h>
-#include <sys/socket.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
-
-
-//#include <functional>
 #include <algorithm>
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
-#include <map>
-#include <sstream>
-#include <vector>
 
 #include "Server.hpp"
-#include "ServerBlock.hpp"
-
-//clang++ main.cpp -D IP=\"192.168.24.34\" ServerBlock.cpp Location.cpp Parser.cpp -o ft
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
-int Client::count = 0;
-int Client::active = Client::count;
+//int Client::count = 0;
+//int Client::active = Client::count;
+
+bool isWorking;
+
+void signal_handler(int num)
+{
+    if (num == SIGQUIT)
+        isWorking = false;
+}
+
 int main (int argc, char *argv[])
 {
     char *arg;
@@ -64,45 +59,43 @@ int main (int argc, char *argv[])
         std::cout << "There are no active servers. Program stopped." << std::endl;
         exit (1);
     }
-    while (1)
+    isWorking = true;
+    if (signal(SIGQUIT, signal_handler) == SIG_ERR)
     {
-        std::cout << "CLIENT TOTAL = " << Client::count << " | ACTIVE: " << Client::active << "\n";
+        std::cout << "Error on signal init. Server stopped." << std::endl;
+        isWorking = false;
+    }
+    else
+        std::cout << "Server is working..." << std::endl;
+    while (isWorking)
+    {
+        //std::cout << "CLIENT TOTAL = " << Client::count << " | ACTIVE: " << Client::active << "\n";
         //std::cout << "Server waiting...\n";
 
         try {
             server->refillSets();
             int ret = server->selector();
-            //std::cout << "RET = " << ret << "\n";
             if (ret < 0)
             {
-                std::cout << ret << ": Select error, skip cycle\n";
+                //std::cout << ret << ": Select error, skip cycle\n";
                 server->cleaner();
-                //usleep(100000);
                 continue ;
             }
             if (!ret)
-            {
-                //std::cout << "\nCHECK REMOVALS\n";
-                //server->remove();
-                std::cout << "SELECT TIMEOUT\n";
                 continue ;
-            }
-            //std::cout << "\nCHECK PORTS\n";
             server->handleConnections();
-            //std::cout << "\nCHECK CLIENTS\n";
             server->readRequests();
-            //std::cout << "\nCHECK REMOVALS\n";
-            //server->remove();
-            //std::cout << "\nCHECK ANSWERS\n";
             server->sendAnswer();
-            //std::cout << "\nCHECK REMOVALS\n";
-            //server->remove();
         }
         catch (const std::bad_alloc& ex)
         {
             server->cleaner();
         }
     }
+    std::cout << "Server is shutting down..." << std::endl;
+    delete server;
+    delete parser;
+    exit(0);
 }
 
 #pragma clang diagnostic pop

@@ -39,6 +39,7 @@ class ServerBlock
 {
 public:
     ServerBlock();
+    ~ServerBlock();
     friend class Parser;
     friend class Port;
     bool createDirs();
