@@ -615,7 +615,14 @@ void Client::cgiResponseSimple()
     args_cpp.push_back(path.str());
     const char * args[3] = {args_cpp[0].c_str(), args_cpp[1].c_str(), NULL};
     int result = 0;
-
+    struct stat cgi_checker;
+    if (stat(cgi.c_str(), &cgi_checker) || S_ISDIR(cgi_checker.st_mode) || !(cgi_checker.st_mode & S_IEXEC))
+    {
+        code = 500;
+        //test500(8);
+        handleErrorPage();
+        return ;
+    }
 
     pid_t pid = fork();
     if (pid < 0)
@@ -721,8 +728,7 @@ void Client::handleRequest(Parser *parser)
             parseHeader(parser);
         }
         else
-            std::cout << "NO SUCH HOST FOR PORT\n";
-        //TODO else cтраница недоступна по данному порту
+            status = -1;
     }
     else
     {
