@@ -29,9 +29,10 @@ struct Location{
     std::set<Method> methods;
     std::string cgi_pass;
     std::vector<std::string> try_files;
+    std::string redirect;
+    bool redirectIsTemp;
     friend std::ostream& operator<<(std::ostream &os, const Location& d);
-    Location(): location(), root(), index(), autoindex(nil), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(){}
-    std::string getCgiPath();
+    Location(): location(), root(), index(), autoindex(nil), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(), redirect(""){}
 };
 std::ostream& operator<<(std::ostream &os, const Location& d);
 

@@ -100,7 +100,7 @@ std::string ServerBlock::getBuffer()
 }
 
 ServerBlock::ServerBlock()
-        :status(clean),server_name(),listen(),error_page(),root(),uploads_directory(""),locations(),client_max_body_size(-1),index(),bufferDir(""),autoindex(),getTry(false){
+        :status(clean),server_name(),listen(),error_page(),root(),uploads_directory(""),locations(),client_max_body_size(-1),index(),bufferDir(""),autoindex(),getTry(false),domainRedirect(""){
 }
 
 ServerBlock::~ServerBlock()
@@ -117,6 +117,7 @@ ServerBlock::~ServerBlock()
     bufferDir.clear();
     bufferRoot.clear();
     uploadsRoot.clear();
+    domainRedirect.clear();
 }
 
 std::string ServerBlock::getErrorPage(size_t val)
@@ -139,4 +140,14 @@ std::string &ServerBlock::getIsBufferRoot()
 std::string &ServerBlock::getIsUploadsRoot()
 {
     return (uploadsRoot);
+}
+
+bool ServerBlock::redirIsTemp()
+{
+    return redirectIsTemp;
+}
+
+std::string &ServerBlock::getRedirect()
+{
+    return domainRedirect;
 }

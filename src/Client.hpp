@@ -96,6 +96,7 @@ public:
     void setKeep(bool val);
     TextHolder *getBuffer();
     void resetBuffer();
+    void formRedirect(std::string redirLocation);
 };
 
 #include "Server.hpp"

@@ -352,6 +352,13 @@ bool Client::parseHeader(Parser *parser)
     }
 
     path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked, 0);
+    if (code == 301 || code == 302)
+    {
+        formRedirect(path.str());
+        path.str("");
+        return (false);
+    }
+
     if (!isLegit || isErrorPage)
         return (handleErrorPage());
 
@@ -702,6 +709,28 @@ void Client::formAnswer()
     responseSize = buffer->getBuffer().size() + 1;
 }
 
+void Client::formRedirect(std::string redirLocation)
+{
+    resetBuffer();
+    std::stringstream codeStr;
+    codeStr << code;
+    buffer->fillBuffer("HTTP/1.1 " + codeStr.str());
+    codeStr.str("");
+
+    if (code == 301)
+        buffer->fillBuffer(" Moved Permanently\r\nLocation: " + redirLocation);
+    else if (code == 302)
+        buffer->fillBuffer(" Found\r\nLocation: " + redirLocation);
+    if (port->getPort() != 80) {
+        codeStr << port->getPort();
+        buffer->fillBuffer(":" + codeStr.str());
+        codeStr.str("");
+    }
+    buffer->fillBuffer("\r\n\r\n");
+    responseSize = buffer->getBuffer().size() + 1;
+    status = 2;
+}
+
 void Client::handleRequest(Parser *parser)
 {
     //std::cout << "HANDLE REQUEST\n";
@@ -725,7 +754,15 @@ void Client::handleRequest(Parser *parser)
         {
             host.clear();
             s_block = &(result->second);
-            parseHeader(parser);
+            if (s_block->getRedirect().empty()) {
+                parseHeader(parser);
+            } else {
+                if (s_block->redirIsTemp())
+                    code = 302;
+                else
+                    code = 301;
+                formRedirect(s_block->getRedirect());
+            }
         }
         else
             status = -1;

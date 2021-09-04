@@ -33,7 +33,9 @@ enum Status{
     waitForServerTryFiles,
     waitForLocationTryFiles,
     waitForUploadsDirectory,
-    waitForBufferDirectory
+    waitForBufferDirectory,
+    waitForDomainRedirect,
+    waitForLocationRedirect
 };
 class ServerBlock
 {
@@ -50,6 +52,8 @@ public:
     std::string getUploadsDir();
     std::string &getIsBufferRoot();
     std::string &getIsUploadsRoot();
+    bool redirIsTemp();
+    std::string &getRedirect();
 
 private:
 
@@ -76,6 +80,8 @@ private:
     bool getTry;
     std::string bufferRoot;
     std::string uploadsRoot;
+    std::string domainRedirect;
+    bool redirectIsTemp;
 };
 
 std::ostream& operator<<(std::ostream &os, const ServerBlock& d);

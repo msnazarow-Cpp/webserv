@@ -32,7 +32,7 @@ bool Parser::check_block(ServerBlock &block) {
             }
         }
     } else {
-        if (block.root.empty()){
+        if (block.root.empty() && block.domainRedirect.empty()){
             throw ParserNotValidException();
         }
     }
@@ -88,19 +88,26 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str == "}") {
                         tmp.status = clean;
                         check_block(tmp);
-                        if (tmp.createDirs())
+                        if (tmp.domainRedirect.empty()) {
+                            if (tmp.createDirs()) {
+                                if (tmp.server_name.empty())
+                                    tmp.server_name.insert(IP);
+                                if (tmp.getTry) {
+                                    blocks.push_back(tmp);
+                                    blocks.back().fillPorts(server);
+                                } else
+                                    std::cout << "Block " << tmp
+                                              << "has been excluded from set because of error (no try files block)\n";
+                            } else
+                                std::cout << "Block " << tmp << "has been excluded from set because of error\n";
+                        }
+                        else
                         {
                             if (tmp.server_name.empty())
                                 tmp.server_name.insert(IP);
-                            if (tmp.getTry) {
-                                blocks.push_back(tmp);
-                                blocks.back().fillPorts(server);
-                            }
-                            else
-                                std::cout << "Block " << tmp << "has been excluded from set because of error (no try files block)\n";
+                            blocks.push_back(tmp);
+                            blocks.back().fillPorts(server);
                         }
-                        else
-                            std::cout << "Block " << tmp << "has been excluded from set because of error\n";
                         tmp = ServerBlock();
                     } else if (str == "listen") {
                         tmp.status = waitForListen;
@@ -126,6 +133,8 @@ Parser::Parser(char *confFileName, Server *server) {
                         tmp.status = waitForUploadsDirectory;
                     } else if (str == "buffer_directory"){
                         tmp.status = waitForBufferDirectory;
+                    } else if (str == "rewrite"){
+                        tmp.status = waitForDomainRedirect;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -151,6 +160,8 @@ Parser::Parser(char *confFileName, Server *server) {
                     } else if (str == "try_files"){
                         tmp.status = waitForLocationTryFiles;
                         tmp.getTry = true;
+                    } else if (str == "rewrite"){
+                        tmp.status = waitForLocationRedirect;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -397,6 +408,44 @@ Parser::Parser(char *confFileName, Server *server) {
                     tmp.bufferDir = str;
                     break;
                 }
+                case waitForDomainRedirect: {
+                    if (str[str.size() - 1] == ';')
+                    {
+                        tmp.status = waitForServerParams;
+                        str.erase(str.end() - 1);
+                    }
+                    if (tmp.domainRedirect.empty()) {
+                        tmp.domainRedirect = str;
+                        //std::cout << "DOMAIN REDIRECT: " << tmp.domainRedirect << "\n";
+                    } else if (!str.compare("redirect")) {
+                        tmp.redirectIsTemp = true;
+                        //std::cout << "Domain redirect is temp\n";
+                    } else if (!str.compare("permanent")) {
+                        tmp.redirectIsTemp = false;
+                        //std::cout << "Domain redirect is perm\n";
+                    } else
+                        throw ParserNotValidException();
+
+                    break;
+                }
+                case waitForLocationRedirect: {
+                    if (str[str.size() - 1] == ';') {
+                        tmp.status = waitForLocationParams;
+                        str.erase(str.end() - 1);
+                    }
+                    if (loc.redirect.empty()) {
+                        loc.redirect = str;
+                        //std::cout << "LOCATION REDIRECT: " << loc.redirect << "\n";
+                    } else if (!str.compare("redirect")) {
+                        loc.redirectIsTemp = true;
+                        //std::cout << "Loc redirect is temp\n";
+                    } else if (!str.compare("permanent")) {
+                        loc.redirectIsTemp = false;
+                        //std::cout << "Loc redirect is perm\n";
+                    } else
+                        throw ParserNotValidException();
+                    break;
+                }
             }
             if (str == ";")
             {
@@ -464,6 +513,15 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         {
                             if (dirSize == request.size())
                             {
+                                if (!loc.redirect.empty())
+                                {
+                                    if (loc.redirectIsTemp)
+                                        code = 302;
+                                    else
+                                        code = 301;
+                                    out = loc.redirect;
+                                    return (out);
+                                }
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
                                 out = loc.root;
@@ -474,6 +532,15 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                             }
                             else if (request[dirSize] == '/')
                             {
+                                if (!loc.redirect.empty())
+                                {
+                                    if (loc.redirectIsTemp)
+                                        code = 302;
+                                    else
+                                        code = 301;
+                                    out = loc.redirect;
+                                    return (out);
+                                }
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
                                 std::string tmp = request.substr(dirSize, request.size() - dirSize);
