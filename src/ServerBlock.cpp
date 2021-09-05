@@ -100,7 +100,19 @@ std::string ServerBlock::getBuffer()
 }
 
 ServerBlock::ServerBlock()
-        :status(clean),server_name(),listen(),error_page(),root(),uploads_directory(""),locations(),client_max_body_size(-1),index(),bufferDir(""),autoindex(),getTry(false),domainRedirect(""){
+        :status(clean),
+        server_name(),
+        listen(),
+        error_page(),
+        root(),
+        uploads_directory(UPLOAD_DEFAULT_DIR),
+        locations(),
+        client_max_body_size(-1),
+        index(),
+        bufferDir(BUFFER_DEFAULT_DIR),
+        autoindex(),
+        getTry(false),
+        domainRedirect("") {
 }
 
 ServerBlock::~ServerBlock()

@@ -371,7 +371,7 @@ bool Client::parseHeader(Parser *parser)
 
     if (requestType == 3)
     {
-        if (!remove(path.str().c_str()))
+        if (!rmdir(path.str().c_str()) || !remove(path.str().c_str()))
         {
             resetBuffer();
             buffer->fillContent("<h1>File " + target + " deleted successfully</h1>");
@@ -689,10 +689,16 @@ void Client::formAnswer()
         code = 200;
     std::stringstream codeStr;
     codeStr << code;
-    buffer->fillBuffer("HTTP/1.1 " + codeStr.str() + " OK\r\nCache-Control: no-cache, private\r\nContent-Type: text/html\r\n");
+    buffer->fillBuffer("HTTP/1.1 " + codeStr.str() + " OK\r\nCache-Control: no-cache, private\r\n");
     codeStr.str("");
+    if (code == 200 && ends_with(target, ".png"))
+        buffer->fillBuffer("Content-Type: image/png\r\n");
+    else if (code == 200 && (ends_with(target, ".jpeg") || ends_with(target, ".jpg")))
+        buffer->fillBuffer("Content-Type: image/jpeg\r\n");
+    else
+        buffer->fillBuffer("Content-Type: text/html\r\n");
 
-        size_t pos = buffer->getContent().find("\r\n\r\n", 0);
+    size_t pos = buffer->getContent().find("\r\n\r\n", 0);
         if (pos != std::string::npos)
         {
             pos += 4;
@@ -721,11 +727,11 @@ void Client::formRedirect(std::string redirLocation)
         buffer->fillBuffer(" Moved Permanently\r\nLocation: " + redirLocation);
     else if (code == 302)
         buffer->fillBuffer(" Found\r\nLocation: " + redirLocation);
-    if (port->getPort() != 80) {
+    /*if (port->getPort() != 80) {
         codeStr << port->getPort();
         buffer->fillBuffer(":" + codeStr.str());
         codeStr.str("");
-    }
+    }*/
     buffer->fillBuffer("\r\n\r\n");
     responseSize = buffer->getBuffer().size() + 1;
     status = 2;

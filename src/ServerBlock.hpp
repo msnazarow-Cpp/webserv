@@ -1,5 +1,7 @@
 #ifndef SERVERBLOCK_HPP
 #define SERVERBLOCK_HPP
+#define UPLOAD_DEFAULT_DIR "/goinfre/jnoma/buffers/server1/uploads"
+#define BUFFER_DEFAULT_DIR "/goinfre/jnoma/buffers/server1/.buffer"
 #include <sys/stat.h>
 #include <iostream>
 #include <map>

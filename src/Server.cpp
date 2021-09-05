@@ -188,7 +188,7 @@ void Server::readRequests()
         descr = (*itC)->getDescriptor();
         if (isSetRead(descr))
         {
-            ret = read(descr, buf, BUFFERSIZE);//, 0);
+            ret = read(descr, buf, BUFFERSIZE);
             if (ret > 0)
             {
                 (*itC)->setTimer();
@@ -197,6 +197,7 @@ void Server::readRequests()
                 if ((*itC)->is_full())
                 {
                     (*itC)->handleRequest(_parser);
+//                    (*itC)->handleRequest(_parser);
                     if ((*itC)->getStatus() == 3 && (*itC)->getFileWrite())
                         addFile((*itC)->getFileWrite());
                 }

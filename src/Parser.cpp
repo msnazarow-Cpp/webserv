@@ -87,17 +87,26 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForServerParams : {
                     if (str == "}") {
                         tmp.status = clean;
-                        check_block(tmp);
+                        try {
+                            check_block(tmp);
+                        } catch (...) {
+                            std::cout <<"Exluded: " << tmp << std::endl;
+                            continue;
+                        }
                         if (tmp.domainRedirect.empty()) {
                             if (tmp.createDirs()) {
                                 if (tmp.server_name.empty())
                                     tmp.server_name.insert(IP);
-                                if (tmp.getTry) {
-                                    blocks.push_back(tmp);
-                                    blocks.back().fillPorts(server);
-                                } else
-                                    std::cout << "Block " << tmp
-                                              << "has been excluded from set because of error (no try files block)\n";
+                                blocks.push_back(tmp);
+                                blocks.back().fillPorts(server);
+                                //TODO: try files check
+//                                if (tmp.getTry) {
+//                                    blocks.push_back(tmp);
+//                                    blocks.back().fillPorts(server);
+//                                } else
+//                                    std::cout << "Block " << tmp
+//                                              << "has been excluded from set because of error (no try files block)\n";
+
                             } else
                                 std::cout << "Block " << tmp << "has been excluded from set because of error\n";
                         }
@@ -175,7 +184,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     char *check;
                     ret = strtol(str.c_str(), &check, 10);
-                    if (check == str.c_str() + str.size())
+                    if (check == str.c_str() + str.size()) //TODO: try to setup the same port multiple times
                         tmp.listen.insert(ret);
                     else{
                         throw ParserNotValidException();
@@ -224,7 +233,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     {
                         tmp.status = waitForServerParams;
                         str.erase(str.end() - 1);
-                    } 
+                    }
                     tmp.index.push_back(str);
                     break;
                 }
@@ -478,6 +487,51 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
     }
 }
 
+void Parser::checkAcceptedMethod(std::set<Method> &methods, int requestType, bool &isLegit, int &code)
+{
+    switch (requestType) {
+        case 1:{
+            if (methods.count(GET))
+                isLegit = true;
+            else
+            {
+                code = 405;
+                isLegit = false;
+            }
+            break ;
+        }
+        case 2:{
+            if (methods.count(POST))
+                isLegit = true;
+            else
+            {
+                code = 405;
+                isLegit = false;
+            }
+            break ;
+        }
+        case 3:{
+            if (methods.count(DELETE))
+                isLegit = true;
+            else
+            {
+                code = 405;
+                isLegit = false;
+            }
+            break ;
+        }
+        case 4:{
+            if (methods.count(PUT))
+                isLegit = true;
+            else
+            {
+                code = 405;
+                isLegit = false;
+            }
+            break ;
+        }
+    }
+}
 
 std::string Parser::getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code, int &maxSize, std::string directory, bool chunked, Location *locMethod) {
     std::string out = "";
@@ -524,9 +578,15 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                 }
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
-                                out = loc.root;
+                                if (hasEnding(loc.root,request)) {
+                                    out = loc.root.substr(0,loc.root.find(request));
+                                }
+                                else {
+                                    out = loc.root;
+                                    request = "/";
+                                }
                                 directory = out;
-                                request = "/";
+//                                request = "/";
                                 //std::cout << "NOW SEARCH FOR: " << out << "\n";
                                 break ;
                             }
@@ -543,10 +603,21 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                 }
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
-                                std::string tmp = request.substr(dirSize, request.size() - dirSize);
-                                request = tmp;
-                                directory = loc.root;
-                                out = loc.root + tmp;
+//                                std::string tmp = request.substr(dirSize, request.size() - dirSize);
+//                                request = tmp;
+                                std::string tmp = request.substr(0,dirSize);
+                                if (hasEnding(loc.root, tmp)) {
+                                    out = loc.root.substr(0,loc.root.find(tmp)); //TODO : Возможно не работает
+                                }
+                                else {
+                                    out = loc.root;
+                                    request = request.substr(dirSize, request.size() - dirSize);
+                                    //TODO: Проверка на PUT
+//                                    request = request.substr(dirSize, request.size() - dirSize);
+//                                    out = loc.root + request;
+                                }
+//                                out = loc.root + tmp;
+                                directory = out;
                                 //std::cout << "NOW SEARCH FOR: " << out << "\n";
                                 break ;
                             }
@@ -554,15 +625,27 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
 
                     }
                 }
-
+                std::string outPlusRequest;
                 if (out.empty())
                 {
                     if (directory.empty())
                         out = loc.root + request;
                     else
                         out = directory + request;
+                    outPlusRequest = out;
                 }
-                if (stat(out.c_str(), &statbuf)){
+                else {
+                   outPlusRequest = out + request;
+                }
+
+                if (stat(outPlusRequest.c_str(), &statbuf)){
+                    // MARK: - Заглушка
+//                    if (!S_ISDIR(statbuf.st_mode)) {
+//                        isErrorPage = false;
+//                        code = 200;
+//                        return (outPlusRequest);
+//                    }
+                    // Заглушка
 
                     for (size_t k = 0; k < loc.try_files.size(); ++k) {
                         if (hasEnding(request, loc.try_files[k]))
@@ -586,83 +669,73 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         code = 404;
                         return (block.getErrorPage(code));
                     }
-                    isErrorPage = false;
-                    return (out);
+//                    isErrorPage = false;
+//                    code = 200;
+                    //return (out);
+                    return (outPlusRequest); //TODO: tut
                 }
-                if (S_ISDIR(statbuf.st_mode) && cgi.empty() && requestType != 4){
+
+                if (S_ISDIR(statbuf.st_mode) && cgi.empty() && requestType != 4) {
+                    // TODO :  Проверка на / в конце 404
+//                    if (request[request.size() - 1] != '/') {
+//                        code = 404;
+//                        isErrorPage = true;
+//                        return (block.getErrorPage(code));
+//                    }
+                    // TODO :  Проверка на / в конце 404
                     if (request[request.size() - 1] != '/')
                         request.push_back('/');
                     for (size_t k = 0; k < loc.index.size(); ++k) {
-                        out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked, locMethod);
-                        if(code != 404) {
+                        out = getfilename(server_name, port, request + loc.index[k], isErrorPage, cgi, isLegit,
+                                          requestType, code, maxSize, directory, chunked, locMethod);
+                        if (code != 404) {
                             isErrorPage = false;
                             return (out);
                         }
-                        if (loc.autoindex){
-                            try{
-                                return (IndexHtmlMaker::makeIndexFile(loc.root, request));
-                            } catch (...){
+                    }
+                    if (loc.autoindex) {
+                        if ((requestType == 1 || (requestType == 2 && !chunked))) {
+                            try {
+                                code = 200;
+                                isErrorPage = false;
+                                if (directory.empty()) {
+                                    if (outPlusRequest[outPlusRequest.size() - 1] != '/')
+                                        outPlusRequest.push_back('/');
+                                    directory = outPlusRequest.substr(0, outPlusRequest.find(request));
+                                }
+                                return (IndexHtmlMaker::makeIndexFile(directory, request));
+                            } catch (...) {
                                 isErrorPage = true;
                                 code = 505;
                                 return (block.getErrorPage(code));
                             }
-                        } else {
-                            code = 403;
-                            isErrorPage = true;
-                            return (block.getErrorPage(code));
                         }
+                        else {
+                            code = 200;
+                            isErrorPage = false;
+                            return (directory + request);
+                        }
+                    } else {
+                        code = 403;
+//                            code = 404; // TODO: Проверка на 403
+                        isErrorPage = true;
+                        return (block.getErrorPage(code));
                     }
                 }
                 isErrorPage = false;
+                code = 200;
                 if (maxSize < 0)
                     maxSize = loc.client_max_body_size;
-                switch (requestType) {
-                    case 1:{
-                        if (locMethod->methods.count(GET))
-                            isLegit = true;
-                        else
-                        {
-                            code = 405;
-                            isLegit = false;
-                        }
-                        break ;
-                    }
-                    case 2:{
-                        if (locMethod->methods.count(POST))
-                            isLegit = true;
-                        else
-                        {
-                            code = 405;
-                            isLegit = false;
-                        }
-                        break ;
-                    }
-                    case 3:{
-                        if (locMethod->methods.count(DELETE))
-                            isLegit = true;
-                        else
-                        {
-                            code = 405;
-                            isLegit = false;
-                        }
-                        break ;
-                    }
-                    case 4:{
-                        if (locMethod->methods.count(PUT))
-                            isLegit = true;
-                        else
-                        {
-                            code = 405;
-                            isLegit = false;
-                        }
-                        break ;
-                    }
-                }
+                checkAcceptedMethod(locMethod->methods, requestType, isLegit, code);
                 if (!isLegit)
-                    out = block.getErrorPage(code);
-                return (out);
+                    outPlusRequest = block.getErrorPage(code);
+
+                return (outPlusRequest);
             }
         }
+        checkAcceptedMethod(block.methods, requestType, isLegit, code);
+        if (!isLegit)
+            return (block.getErrorPage(code));
         out = block.root + request;
         if (stat(out.c_str(), &statbuf))
         {
@@ -680,7 +753,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             if (request[request.size() - 1] != '/')
                 request.push_back('/');
             for (size_t k = 0; k < block.index.size(); ++k) {
-                if (hasEnding(request,block.try_files[i]))
+                if (!block.try_files.empty() && hasEnding(request,block.try_files[i]))
                     break;
                 out = getfilename(server_name, port, request + block.index[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked, locMethod);
                 if(code != 404){
@@ -689,12 +762,22 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                 }
             }
             if (block.autoindex){
-                try {
-                    return (IndexHtmlMaker::makeIndexFile(block.root, request));
-                } catch (...) {
-                    isErrorPage = true;
-                    code = 505;
-                    return (block.getErrorPage(code));
+                if ((requestType == 1 || (requestType == 2 && !chunked))) {
+                    try {
+                        code = 200;
+                        isErrorPage = false;
+                        return (IndexHtmlMaker::makeIndexFile(block.root,
+                                                              request)); //TODO: Возможно заменить на directory
+                    } catch (...) {
+                        isErrorPage = true;
+                        code = 505;
+                        return (block.getErrorPage(code));
+                    }
+                }
+                else {
+                    code = 200;
+                    isErrorPage = false;
+                    return (block.root + request);
                 }
             }
             code = 403;
