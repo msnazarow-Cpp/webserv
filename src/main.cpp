@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 
 #include <algorithm>
@@ -6,6 +7,10 @@
 #include <iostream>
 
 #include "Server.hpp"
+
+#ifndef FDCOUNT
+#define FDCOUNT 1024
+#endif
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
@@ -25,13 +30,12 @@ int main (int argc, char *argv[])
     char *arg;
     if (argc == 1)
     {
-        //std::string tmp("./default.conf"); //TODO Зачем здесь переменная если она нигде не используется? - ниже используется
         arg = const_cast<char *>("./default.conf");
         struct stat info;
         if(!(!stat(arg, &info) && !S_ISDIR(info.st_mode)))
         {
             std::cout << "Please, provide config-file as argument or place 'default.conf' near executable." << std::endl;
-            exit(2); //TODO  Чтобы санитайзеры не регистрировали утечку, используй exit для завершения программы, а не return
+            exit(2);
         }
     }
     else
@@ -67,6 +71,14 @@ int main (int argc, char *argv[])
     }
     else
         std::cout << "Server is working..." << std::endl;
+    struct rlimit limits_old, limits_new;
+    if (!getrlimit(RLIMIT_NOFILE, &limits_old) && limits_old.rlim_cur < FDCOUNT)
+    {
+        limits_new.rlim_cur = FDCOUNT;
+        limits_new.rlim_max = FDCOUNT;
+        setrlimit(RLIMIT_NOFILE, &limits_new);
+    }
+
     while (isWorking)
     {
         //std::cout << "CLIENT TOTAL = " << Client::count << " | ACTIVE: " << Client::active << "\n";
@@ -95,6 +107,7 @@ int main (int argc, char *argv[])
     std::cout << "Server is shutting down..." << std::endl;
     delete server;
     delete parser;
+    setrlimit(RLIMIT_NOFILE, &limits_old);
     exit(0);
 }
 
