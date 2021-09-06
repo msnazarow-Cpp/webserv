@@ -1,7 +1,6 @@
 #ifndef TEXTHOLDER_HPP
 #define TEXTHOLDER_HPP
 #include <iostream>
-
 class Client;
 
 class TextHolder{
@@ -20,7 +19,5 @@ public:
     std::string &getContent();
     void concatenate();
 };
-
-#include "Client.hpp"
 #endif
 

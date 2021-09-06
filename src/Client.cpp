@@ -118,60 +118,60 @@ void Client::setCode(int val)
 
 void Client::fillErrorContent()
 {
-    switch (code){
-        case 100:{
+    switch (code) {
+        case 100: {
             buffer->fillContent("<h1>100: Continue</h1>");
             break;
         }
-        case 202:{
+        case 202: {
             buffer->fillContent("<h1>202: Accepted</h1>");
             break;
         }
-        case 204:{
+        case 204: {
             buffer->fillContent("<h1>204: No content</h1>");
             break;
         }
-        case 400:{
+        case 400: {
             buffer->fillContent("<h1>400: Bad request</h1>");
             break;
         }
-        case 401:{
+        case 401: {
             buffer->fillContent("<h1>401: Authorization required</h1>");
             break;
         }
-        case 403:{
+        case 403: {
             buffer->fillContent("<h1>403: Access forbidden</h1>");
             break;
         }
-        case 404:{
+        case 404: {
             buffer->fillContent("<h1>404: Not Found</h1>");
             break;
         }
-        case 405:{
+        case 405: {
             buffer->fillContent("<h1>405: Request type not allowed</h1>");
             break;
         }
-        case 408:{
+        case 408: {
             buffer->fillContent("<h1>408: Timeout</h1>");
             break;
         }
-        case 411:{
+        case 411: {
             buffer->fillContent("<h1>411: Length required</h1>");
             break;
         }
-        case 413:{
+        case 413: {
             buffer->fillContent("<h1>413: Payload Too Large</h1>");
             break;
         }
-        case 422:{
+        case 422: {
             buffer->fillContent("<h1>422: Unprocessable entity</h1>");
             break;
         }
-        case 500:{
+        case 500: {
             buffer->fillContent("<h1>500: Internal server error</h1>");
             break;
         }
-        case 501:{
+        case 501: {
             buffer->fillContent("<h1>501: Not implemented</h1>");
             break;
         }
@@ -182,27 +182,25 @@ bool Client::handleErrorPage()
 {
     //std::cout << "Handle error\n";
     resetBuffer();
-    if (!s_block)
-    {
+    if (!s_block) {
         status = -1;
         return (true);
     }
     std::string error = s_block->getErrorPage(code);
-    if (error.empty())
-    {
+    if (error.empty()) {
         fillErrorContent();
         status = 2;
         formAnswer();
     }
     else
     {
-        try{
+        try {
             if (fileRead)
                 resetFile(&fileRead);
             fileRead = new FileUpload(error, 0, "", this, true);
             fileRead->setStatus(2);
             status = 6;
-        }catch(Exception &e){
+        } catch(Exception &e) {
             fillErrorContent();
             status = 2;
             formAnswer();
@@ -240,8 +238,7 @@ bool Client::parseHeader(Parser *parser)
     target = path.str();
     envs["REQUEST_URI"] = target;
     size_t pos3 = path.str().find("?", 0);
-    if (pos3 != std::string::npos)
-    {
+    if (pos3 != std::string::npos) {
         pos3++;
         envs.insert(std::pair<std::string, std::string>("QUERY_STRING", target.substr(pos3, target.length() - pos3)));
         target = path.str().substr(0, pos3 - 1);
@@ -253,8 +250,7 @@ bool Client::parseHeader(Parser *parser)
     //PROTOCOL
     pos2++;
     pos = buffer->getBuffer().find("\r\n", pos2);
-    if (pos == std::string::npos)
-    {
+    if (pos == std::string::npos) {
         code = 400;
         return (handleErrorPage());
     }
@@ -263,8 +259,7 @@ bool Client::parseHeader(Parser *parser)
     //HOSTNAME
     pos += 2;
     pos2 = buffer->getBuffer().find("Host: ", pos);
-    if (pos2 == std::string::npos)
-    {
+    if (pos2 == std::string::npos) {
         code = 400;
         return (handleErrorPage());
     }
@@ -274,15 +269,13 @@ bool Client::parseHeader(Parser *parser)
     std::string requestHost;
     std::stringstream streamPort;
     int requestPort;
-    if (pos != std::string::npos && pos < pos3)
-    {
+    if (pos != std::string::npos && pos < pos3) {
         requestHost = buffer->getBuffer().substr(pos2, pos - pos2);
 
         //PORT
         pos++;
         pos2 = buffer->getBuffer().find("\r\n", pos);
-        if (pos2 == std::string::npos)
-        {
+        if (pos2 == std::string::npos) {
             code = 400;
             return (handleErrorPage());
         }

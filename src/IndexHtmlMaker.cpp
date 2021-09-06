@@ -2,14 +2,15 @@
 // Created by msnazarow on 19.08.2021.
 //
 
-#include "IndexHtmlMaker.hpp"
 #include <dirent.h>
 #include <fstream>
 #include <sys/stat.h>
 #include <iomanip>
 #include <cstring>
-
 #include <iostream>
+
+#include "IndexHtmlMaker.hpp"
+
 std::string IndexHtmlMaker::makeIndexFile(std::string rootDirectory, std::string requestDirectory) {
     DIR *dir;
     struct stat info;
@@ -27,7 +28,7 @@ std::string IndexHtmlMaker::makeIndexFile(std::string rootDirectory, std::string
     std::ofstream file((bufDirectory + ".html").c_str());
     file.setf(std::ios::left);
 
-    if (!(file << " <html>\n<head><title>Index of " << requestDirectory << "</title></head>\n<body bgcolor=\"white\">\n"))
+    if (!(file << "<html>\n<head><title>Index of " << requestDirectory << "</title></head>\n<body bgcolor=\"white\">\n"))
         throw IndexHtmlMakerException();
     file << "<h1>Index of " << requestDirectory << "</h1><hr><pre>\n";
     if ((dir = opendir (bufDirectory.c_str())) != NULL) {

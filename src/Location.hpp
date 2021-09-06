@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <set>
+
 enum Method{
     GET,
     POST,
@@ -18,7 +19,7 @@ enum BoolPlusNil{
     True,
     nil
 };
-struct Location{
+struct Location {
     std::vector<std::string> location;
     std::string root;
     std::vector<std::string> index;

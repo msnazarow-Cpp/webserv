@@ -17,12 +17,11 @@ std::ostream &operator<<(std::ostream &os, const Location &d) {
 std::ostream& operator<<(std::ostream& out, const BoolPlusNil value) {
     static std::map<BoolPlusNil, std::string> strings;
     if (strings.size() == 0) {
-#define INSERT_ELEMENT(p) strings[p] = #p
-        INSERT_ELEMENT(True);
-        INSERT_ELEMENT(False);
-        INSERT_ELEMENT(nil);
-#undef INSERT_ELEMENT
+        #define INSERT_ELEMENT(p) strings[p] = #p
+                INSERT_ELEMENT(True);
+                INSERT_ELEMENT(False);
+                INSERT_ELEMENT(nil);
+        #undef INSERT_ELEMENT
     }
-
     return out << strings[value];
 }

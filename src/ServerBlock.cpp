@@ -1,9 +1,10 @@
 //
 // Created by msnazarow on 14.08.2021.
 //
-#include "ServerBlock.hpp"
 #include <ostream>
+#include "ServerBlock.hpp"
 #include "Extention.hpp"
+#include "Server.hpp"
 
 bool operator==(const ServerBlock &lhs, const ServerBlock &rhs) {
     return lhs.server_name == rhs.server_name;

@@ -6,6 +6,7 @@
 #include "Parser.hpp"
 #include "IndexHtmlMaker.hpp"
 #include "Colors.h"
+#include "Extention.hpp"
 #include <sys/stat.h>
 #ifndef IP
     #define IP "localhost"
@@ -45,7 +46,7 @@ bool Parser::check_block(ServerBlock &block) {
     }
     return false;
 }
-void Parser::caseWaitForLocationParams(ServerBlock &block, Location &loc, std::string &str) {
+void Parser::caseWaitForLocationParams(ServerBlock &block, Location &loc, std::string &str, std::string &strForException) {
     if (str == "}") {
     block.status = waitForServerParams;
     block.locations.push_back(loc);
@@ -68,10 +69,10 @@ void Parser::caseWaitForLocationParams(ServerBlock &block, Location &loc, std::s
     } else if (str == "rewrite"){
     block.status = waitForLocationRedirect;
     } else {
-    throw ParserNotValidException();
+    throw ParserNotValidException(strForException);
     }
 }
-void Parser::caseWaitForServerParams(ServerBlock &block, std::string &str) {
+void Parser::caseWaitForServerParams(ServerBlock &block, std::string &str, std::string &strForException) {
     if (str == "listen") {
         block.status = waitForListen;
     } else if (str == "server_name") {
@@ -99,7 +100,7 @@ void Parser::caseWaitForServerParams(ServerBlock &block, std::string &str) {
     } else if (str == "rewrite") {
         block.status = waitForDomainRedirect;
     } else {
-        throw ParserNotValidException();
+        throw ParserNotValidException(strForException);
     }
 }
 Parser::Parser(char *confFileName, Server *server) {
@@ -113,15 +114,16 @@ Parser::Parser(char *confFileName, Server *server) {
         std::cout << "WARRIES" << std::endl;
         throw ParserNotValidException();
     }
+    size_t lineNumber = 1;
     while (std::getline(file, str)) {
-        if (str.substr(0, 1) == "#")
+        std::string strForException = SSTR(lineNumber) + ":\t" + str;
+        lineNumber += 1;
+        str = str.substr(0, str.find('#'));
+        if (str.empty())
             continue;
         std::stringstream ss;
         ss << str;
-        std::string strForException = str;
         while (ss >> str) {
-            if (str.substr(0, 1) == "#")
-                break;
             if (str == ";")
             {
                 if (block.status >= waitForListen && block.status <= waitForDomainRedirect)
@@ -129,7 +131,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 else if (block.status >= waitForLocationIndex){
                     block.status = waitForLocationParams;
                 } else {
-                    throw ParserNotValidException();
+                    throw ParserNotValidException(strForException);
                 }
                 continue;
             }
@@ -146,7 +148,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (str == "{"){
                         block.status = waitForServerParams;
                     } else {
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -183,12 +185,12 @@ Parser::Parser(char *confFileName, Server *server) {
                         }
                         block = ServerBlock();
                     } else {
-                        caseWaitForServerParams(block, str);
+                        caseWaitForServerParams(block, str, strForException);
                     }
                     break;
                 }
                 case waitForLocationParams : {
-                    caseWaitForLocationParams(block, loc, str);
+                    caseWaitForLocationParams(block, loc, str, strForException);
                     break;
                 }
                 case waitForListen : {
@@ -199,10 +201,10 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     char *check;
                     ret = strtol(str.c_str(), &check, 10);
-                    if (check == str.c_str() + str.size()) //TODO: try to setup the same port multiple times
+                    if (check == str.c_str() + str.size() && block.listen.count(ret) == 0) {
                         block.listen.insert(ret);
-                    else{
-                        throw ParserNotValidException();
+                    } else {
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -218,7 +220,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 }
                 case waitForServerRoot : {
                     if (!block.root.empty())
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     else {
                         if (str[str.size() - 1] == ';')
                         {
@@ -232,7 +234,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 }
                 case waitForLocationRoot : {
                     if (!loc.root.empty())
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     else {
                         if (str[str.size() - 1] == ';'){
                             block.status = waitForLocationParams;
@@ -280,7 +282,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         loc.methods.insert(PUT);
                         //std::cout << "DELETE INSERTED\n";
                     } else {
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -303,7 +305,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         block.methods.insert(PUT);
                         //std::cout << "DELETE INSERTED\n";
                     } else {
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -318,7 +320,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     } else if ( str == "off"){
                         loc.autoindex = static_cast<BoolPlusNil>(false);
                     } else {
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -333,7 +335,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     } else if ( str == "off"){
                         block.autoindex = static_cast<BoolPlusNil>(false);
                     } else {
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -343,7 +345,11 @@ Parser::Parser(char *confFileName, Server *server) {
                         block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
-                    loc.cgi_pass = str;
+                    if (loc.cgi_pass.empty()) {
+                        loc.cgi_pass = str;
+                    } else {
+                        throw ParserNotValidException(strForException);
+                    }
                 }
                     break;
                 case waitForLocationClientMaxBodySize: {
@@ -357,7 +363,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (check == str.c_str() + str.size())
                         loc.client_max_body_size = ret;
                     else{
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -372,7 +378,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     if (check == str.c_str() + str.size())
                         block.client_max_body_size = ret;
                     else{
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -383,7 +389,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         block.error_page[ret];
                         block.status = waitForErrorPage;
                     } else{
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
@@ -453,7 +459,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         block.redirectIsTemp = false;
                         //std::cout << "Domain redirect is perm\n";
                     } else
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
 
                     break;
                 }
@@ -472,7 +478,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         loc.redirectIsTemp = false;
                         //std::cout << "Loc redirect is perm\n";
                     } else
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     break;
                 }
             }
@@ -500,17 +506,16 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
 void Parser::checkAcceptedMethod(std::set<Method> &methods, int requestType, bool &isLegit, int &code)
 {
     switch (requestType) {
-        case 1:{
+        case 1: {
             if (methods.count(GET))
                 isLegit = true;
-            else
-            {
+            else {
                 code = 405;
                 isLegit = false;
             }
             break ;
         }
-        case 2:{
+        case 2: {
             if (methods.count(POST))
                 isLegit = true;
             else
@@ -520,7 +525,7 @@ void Parser::checkAcceptedMethod(std::set<Method> &methods, int requestType, boo
             }
             break ;
         }
-        case 3:{
+        case 3: {
             if (methods.count(DELETE))
                 isLegit = true;
             else
@@ -530,11 +535,10 @@ void Parser::checkAcceptedMethod(std::set<Method> &methods, int requestType, boo
             }
             break ;
         }
-        case 4:{
+        case 4: {
             if (methods.count(PUT))
                 isLegit = true;
-            else
-            {
+            else {
                 code = 405;
                 isLegit = false;
             }
@@ -553,8 +557,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
         ServerBlock block = blocks[i];
         for (size_t j = 0; j < block.locations.size(); ++j) {
             Location loc = block.locations[j];
-            if (loc.location.size() > 1 && hasEnding(request, loc.location[1]))
-            {
+            if (loc.location.size() > 1 && hasEnding(request, loc.location[1])) {
                 cgi = loc.cgi_pass;
                 break ;
             }
@@ -564,21 +567,14 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             Location loc = block.locations[j];
             if (!locMethod)
                 locMethod = &loc;
-
             if (unorderIsPrefix(request, loc.location[0]) || (loc.location.size() > 1 &&
             hasEnding(request, loc.location[1]))){
-
-                if (directory.empty())
-                {
-                    for (std::vector<std::string>::iterator it = loc.location.begin(); it != loc.location.end(); it++)
-                    {
+                if (directory.empty()) {
+                    for (std::vector<std::string>::iterator it = loc.location.begin(); it != loc.location.end(); it++) {
                         size_t dirSize = (*it).size();
-                        if (!request.compare(0, dirSize, (*it)))
-                        {
-                            if (dirSize == request.size())
-                            {
-                                if (!loc.redirect.empty())
-                                {
+                        if (!request.compare(0, dirSize, (*it))) {
+                            if (dirSize == request.size()) {
+                                if (!loc.redirect.empty()) {
                                     if (loc.redirectIsTemp)
                                         code = 302;
                                     else
@@ -600,10 +596,8 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                 //std::cout << "NOW SEARCH FOR: " << out << "\n";
                                 break ;
                             }
-                            else if (request[dirSize] == '/')
-                            {
-                                if (!loc.redirect.empty())
-                                {
+                            else if (request[dirSize] == '/') {
+                                if (!loc.redirect.empty()) {
                                     if (loc.redirectIsTemp)
                                         code = 302;
                                     else
@@ -632,7 +626,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                 break ;
                             }
                         }
-
                     }
                 }
                 std::string outPlusRequest;
@@ -658,8 +651,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     // Заглушка
 
                     for (size_t k = 0; k < loc.try_files.size(); ++k) {
-                        if (hasEnding(request, loc.try_files[k]))
-                        {
+                        if (hasEnding(request, loc.try_files[k])) {
                             if (!loc.cgi_pass.empty())
                                 cgi = loc.cgi_pass;
                             break;
@@ -673,8 +665,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     }
                     if (!loc.try_files.size() && !loc.cgi_pass.empty())
                         cgi = loc.cgi_pass;
-                    if (cgi.empty() && requestType != 4)
-                    {
+                    if (cgi.empty() && requestType != 4) {
                         isErrorPage = true;
                         code = 404;
                         return (block.getErrorPage(code));
@@ -747,8 +738,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
         if (!isLegit)
             return (block.getErrorPage(code));
         out = block.root + request;
-        if (stat(out.c_str(), &statbuf))
-        {
+        if (stat(out.c_str(), &statbuf)) {
             for (size_t k = 0; k < block.try_files.size(); ++k) {
                 out = getfilename(server_name, port, request + block.try_files[k], isErrorPage, cgi, isLegit, requestType, code, maxSize, directory, chunked, locMethod);
                 if (code != 404) {
@@ -759,7 +749,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
             code = 404;
             return (block.getErrorPage(code));
         }
-        if (S_ISDIR(statbuf.st_mode)){
+        if (S_ISDIR(statbuf.st_mode)) {
             if (request[request.size() - 1] != '/')
                 request.push_back('/');
             for (size_t k = 0; k < block.index.size(); ++k) {
@@ -771,7 +761,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                     return (out);
                 }
             }
-            if (block.autoindex){
+            if (block.autoindex) {
                 if ((requestType == 1 || (requestType == 2 && !chunked))) {
                     try {
                         code = 200;
@@ -802,16 +792,28 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
     return (blocks[0].getErrorPage(code));
 }
 
-size_t Parser::getBlocksCount()
-{
+size_t Parser::getBlocksCount() {
     return (blocks.size());
 }
 
-Parser::~Parser()
-{
+Parser::~Parser() {
     blocks.clear();
 }
 
 const std::vector<ServerBlock> &Parser::getBlocks() {
     return blocks;
+}
+
+Parser::ParserNotValidException::ParserNotValidException() {
+}
+
+Parser::ParserNotValidException::ParserNotValidException(std::string message) {
+    this->_message = message;
+}
+
+const char *Parser::ParserNotValidException::what() const throw() {
+    return (_message.c_str());
+}
+
+Parser::ParserNotValidException::~ParserNotValidException() throw() {
 }

@@ -5,7 +5,6 @@
 #ifndef WEBSERV_CLEAN_INDEXHTMLMAKER_HPP
 #define WEBSERV_CLEAN_INDEXHTMLMAKER_HPP
 
-
 #include <exception>
 #include <string>
 
@@ -14,6 +13,5 @@ public:
     class IndexHtmlMakerException : std::exception{};
     static std::string makeIndexFile(std::string rootDirectory, std::string requestDirectory);
 };
-
 
 #endif //WEBSERV_CLEAN_INDEXHTMLMAKER_HPP

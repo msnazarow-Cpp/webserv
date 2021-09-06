@@ -10,9 +10,11 @@
 #include <sstream>
 #include <cstdlib>
 #include <cstring>
+
 #include "Location.hpp"
 #include "Server.hpp"
 #include "ServerBlock.hpp"
+
 class Parser {
 private:
     std::vector<ServerBlock> blocks;
@@ -20,16 +22,10 @@ public:
     class ParserNotValidException:std::exception {
         std::string _message;
     public:
-        ParserNotValidException() {
-        }
-        ParserNotValidException(std::string message) {
-            this->_message = message;
-        }
-        virtual const char* what() const throw() {
-            return (_message.c_str());
-        }
-        virtual ~ParserNotValidException() throw() {
-        };
+        ParserNotValidException();
+        ParserNotValidException(std::string message);
+        virtual const char* what() const throw();
+        virtual ~ParserNotValidException() throw();
     };
     class NoValidServerBlockExeption:std::exception{};
 //    class ParserNotValidException:std::exception{};
@@ -42,7 +38,8 @@ public:
     size_t getBlocksCount();
     void checkAcceptedMethod(std::set<Method> &methods, int requestType, bool &isLegit, int &code);
     const std::vector<ServerBlock> &getBlocks();
-    void caseWaitForLocationParams(ServerBlock &block, Location &loc, std::string &str);
-    void caseWaitForServerParams(ServerBlock &block, std::string &str);
+    void caseWaitForLocationParams(ServerBlock &block, Location &loc, std::string &str, std::string &strForException);
+    void caseWaitForServerParams(ServerBlock &block, std::string &str, std::string &strForException);
 };
+
 #endif //C_SOCKET_SERVER_GROUP__PARSER_HPP

@@ -1,4 +1,5 @@
 #include "TextHolder.hpp"
+#include "Client.hpp"
 
 TextHolder::TextHolder(): buffer(""), content(""){}
 

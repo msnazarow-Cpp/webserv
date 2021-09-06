@@ -5,12 +5,12 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <map>
-#include "Location.hpp"
 #include <vector>
 #include <set>
+#include "Location.hpp"
 #include "Exception.hpp"
-
 class Server;
+
 enum Status{
 
     clean,
@@ -90,5 +90,4 @@ private:
 };
 
 std::ostream& operator<<(std::ostream &os, const ServerBlock& d);
-#include "Server.hpp"
 #endif

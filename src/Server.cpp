@@ -114,7 +114,7 @@ int Server::getLastSock()
 
 int Server::selector()
 {
-    return (select(getLastSock() + 1, &read_current, &write_current, NULL, &timeout));
+    return (select(getLastSock() + 1, &read_current, &write_current, NULL, NULL)); //TODO: Если ставить timeout - бесконечный селект
 }
 
 void Server::addPort(Port *port)
@@ -279,7 +279,7 @@ void Server::sendAnswer()
     while (itC != allclients.end())
     {
         descr = (*itC)->getDescriptor();
-        if (isSetWrite(descr)) //TODO Не write при редиректе
+        if (isSetWrite(descr)) //TODO Не write при редиректе , при POST (get kartinko)
         {
             (*itC)->setTimer();
             if ((*itC)->getStatus() == 4)

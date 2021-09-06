@@ -3,7 +3,6 @@
 #define BUFFERSIZE 1024*1024
 #define TIMEOUT 120
 #include <sys/select.h>
-#include <sys/time.h>
 #include <iostream>
 #include <vector>
 #include <algorithm>

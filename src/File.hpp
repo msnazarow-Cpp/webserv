@@ -30,5 +30,4 @@ public:
     void setConstant();
 };
 
-#include "Client.hpp"
 #endif
