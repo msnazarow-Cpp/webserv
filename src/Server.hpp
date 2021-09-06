@@ -23,6 +23,7 @@ private:
     struct timeval timeout;
     char buf[BUFFERSIZE + 1];
     Parser *_parser;
+    std::map<std::string, std::string> contentType;
     
 public:
     Server();
@@ -48,6 +49,7 @@ public:
     bool isSetRead(int fd);
     bool isSetWrite(int fd);
     void clearPorts();
+    void fillContentTypes();
 };
 
 #endif

@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client(Port *_port): cgi(""), port(_port), fileWrite(0), fileRead(0), s_block(0)
+Client::Client(Port *_port, std::map<std::string, std::string> *_contentType): cgi(""), port(_port), fileWrite(0), fileRead(0), s_block(0), contentType(_contentType)
 {
     //std::cout << "CLIENT TO PORT " << port->getDescriptor() << "\n";
     sockaddr_in addr;
@@ -348,7 +348,7 @@ bool Client::parseHeader(Parser *parser)
     path << fileName;
     if (code == 301 || code == 302)
     {
-        formRedirect(path.str() + target); //TODO: Add plus target
+        formRedirect(path.str() + target); //TODO: Add plus target - теперь не очень работают редиректы из локейшенов
         path.str("");
         return (false);
     }
@@ -665,6 +665,31 @@ void Client::cgiResponseSimple()
     }
 }
 
+void Client::fillContentType()
+{
+    /*if (ends_with(target, ".png"))
+        buffer->fillBuffer("Content-Type: image/png\r\n");
+    else if (ends_with(target, ".jpeg") || ends_with(target, ".jpg"))
+        buffer->fillBuffer("Content-Type: image/jpeg\r\n");*/
+    size_t pos, posRes = 0;
+    while ((pos = target.find(".", posRes)) != std::string::npos)
+        posRes = pos + 1;
+    if (!posRes)
+    {
+        buffer->fillBuffer("Content-Type: text/html\r\n");
+        return ;
+    }
+    posRes--;
+    std::string ending(target.substr(posRes, target.size() - posRes));
+    std::map<std::string, std::string>::iterator it = contentType->find(ending);
+    if (it != contentType->end())
+    {
+        buffer->fillBuffer("Content-Type: " + (*it).second + "\r\n");
+        return ;
+    }
+    buffer->fillBuffer("Content-Type: text/html\r\n");
+}
+
 void Client::formAnswer()
 {
     //std::cout << "FORM ANSWER\n";
@@ -685,10 +710,8 @@ void Client::formAnswer()
     codeStr << code;
     buffer->fillBuffer("HTTP/1.1 " + codeStr.str() + " OK\r\nCache-Control: no-cache, private\r\n");
     codeStr.str("");
-    if (code == 200 && ends_with(target, ".png"))
-        buffer->fillBuffer("Content-Type: image/png\r\n");
-    else if (code == 200 && (ends_with(target, ".jpeg") || ends_with(target, ".jpg")))
-        buffer->fillBuffer("Content-Type: image/jpeg\r\n");
+    if (code == 200 && !ends_with(target, ".html"))
+        fillContentType();
     else
         buffer->fillBuffer("Content-Type: text/html\r\n");
 

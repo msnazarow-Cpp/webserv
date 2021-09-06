@@ -57,9 +57,10 @@ private:
     ServerBlock *s_block;
 
     TextHolder *buffer;
+    std::map<std::string, std::string> *contentType;
 
 public:
-    Client(Port *_port);
+    Client(Port *_port, std::map<std::string, std::string> *_contentType);
     ~Client();
     void reset(bool val);
     int &getDescriptor();
@@ -93,6 +94,7 @@ public:
     TextHolder *getBuffer();
     void resetBuffer();
     void formRedirect(std::string redirLocation);
+    void fillContentType();
 };
 
 #include "Server.hpp"

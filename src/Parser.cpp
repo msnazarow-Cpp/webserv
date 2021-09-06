@@ -717,8 +717,8 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                             return (directory + request);
                         }
                     } else {
-                        code = 403;
-//                            code = 404; // TODO: Проверка на 403
+                        //code = 403;
+                        code = 404; // TODO: 404 set for school tester. Should be 403 in fact.
                         isErrorPage = true;
                         return (block.getErrorPage(code));
                     }
