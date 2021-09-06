@@ -7,9 +7,10 @@
 #include <iostream>
 
 #include "Server.hpp"
+#include "Colors.h"
 
 #ifndef FDCOUNT
-#define FDCOUNT 1024
+    #define FDCOUNT 1024
 #endif
 
 #pragma clang diagnostic push
@@ -47,7 +48,10 @@ int main (int argc, char *argv[])
     Parser *parser;
     try {
         parser = new Parser(arg, server);
-    } catch (Parser::ParserNotValidException &e) {
+    } catch (Parser::NoValidServerBlockExeption &e) {
+        std::cout << RED << "Exception during config parsing: No valid server block\nPlease correct or use another config." << DEFAULT << std::endl;
+        exit (1);
+    }catch (Parser::ParserNotValidException &e) {
         std::cout << "Exception during config parsing. Server stopped." << std::endl;
         exit (1);
     }
@@ -71,7 +75,7 @@ int main (int argc, char *argv[])
     }
     else
         std::cout << "Server is working..." << std::endl;
-    struct rlimit limits_old, limits_new;
+    struct rlimit limits_old, limits_new; //TODO; limits_new остается неинициализрованной
     if (!getrlimit(RLIMIT_NOFILE, &limits_old) && limits_old.rlim_cur < FDCOUNT)
     {
         limits_new.rlim_cur = FDCOUNT;

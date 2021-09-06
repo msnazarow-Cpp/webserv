@@ -6,6 +6,7 @@
 #include <ostream>
 std::ostream &operator<<(std::ostream &os, const Location &d) {
     return (os <<
+    "\t======Location====" << std::endl <<
     "\tLocation Request: " << d.location << std::endl <<
     "\tLocation Root: " << d.root << std::endl <<
     "\tLocation IndexFiles: " << d.index << std::endl <<

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "Parser.hpp"
 #include "IndexHtmlMaker.hpp"
+#include "Colors.h"
 #include <sys/stat.h>
 #ifndef IP
     #define IP "localhost"
@@ -106,9 +107,8 @@ Parser::Parser(char *confFileName, Server *server) {
 //                                } else
 //                                    std::cout << "Block " << tmp
 //                                              << "has been excluded from set because of error (no try files block)\n";
-
                             } else
-                                std::cout << "======Block====" <<std::endl << tmp << "has been excluded from set because of error\n";
+                                std::cout << YELLOW << tmp << RED << "Error: Can't create uploads or/and .buffer directory" << DEFAULT << std::endl;
                         }
                         else
                         {
@@ -469,7 +469,7 @@ Parser::Parser(char *confFileName, Server *server) {
         }
     }
     if (blocks.empty())
-        throw  ParserNotValidException();
+        throw  NoValidServerBlockExeption();
 }
 bool unorderIsPrefix( std::string const& lhs, std::string const& rhs )
 {

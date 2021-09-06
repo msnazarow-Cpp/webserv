@@ -31,6 +31,7 @@ bool operator>=(const ServerBlock &lhs, const ServerBlock &rhs) {
 
 std::ostream &operator<<(std::ostream &os, const ServerBlock &d) {
     return os <<
+    "======Block====" << std::endl <<
     "Block ServerName: " << d.server_name << std::endl <<
     "Block Root: " << d.root << std::endl <<
     "Block Error Pages: " << d.error_page << std::endl <<

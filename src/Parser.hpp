@@ -19,6 +19,10 @@ private:
     std::vector<ServerBlock> blocks;
 public:
     class ParserNotValidException:std::exception{};
+    class NoValidServerBlockExeption:std::exception{};
+//    class ParserNotValidException:std::exception{};
+//    class ParserNotValidException:std::exception{};
+//    class ParserNotValidException:std::exception{};
     Parser(char *confFileName, Server *server);
     ~Parser();
     static bool check_block(ServerBlock & block);
