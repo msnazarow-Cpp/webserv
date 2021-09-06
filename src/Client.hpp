@@ -89,7 +89,6 @@ public:
     bool shouldKeep();
     struct timeval &getTimer();
     void setTimer();
-   //void test500(int val);
     void setKeep(bool val);
     TextHolder *getBuffer();
     void resetBuffer();

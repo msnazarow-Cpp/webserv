@@ -271,16 +271,12 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     if (str == "GET"){
                         loc.methods.insert(GET);
-                        //std::cout << "GET INSERTED\n";
                     }else if (str == "POST") {
                         loc.methods.insert(POST);
-                        //std::cout << "POST INSERTED\n";
                     } else if (str == "DELETE") {
                         loc.methods.insert(DELETE);
-                        //std::cout << "DELETE INSERTED\n";
                     } else if (str == "PUT") {
                         loc.methods.insert(PUT);
-                        //std::cout << "DELETE INSERTED\n";
                     } else {
                         throw ParserNotValidException(strForException);
                     }
@@ -294,16 +290,12 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     if (str == "GET"){
                         block.methods.insert(GET);
-                        //std::cout << "GET INSERTED\n";
                     }else if (str == "POST") {
                         block.methods.insert(POST);
-                        //std::cout << "POST INSERTED\n";
                     } else if (str == "DELETE") {
                         block.methods.insert(DELETE);
-                        //std::cout << "DELETE INSERTED\n";
                     } else if (str == "PUT") {
                         block.methods.insert(PUT);
-                        //std::cout << "DELETE INSERTED\n";
                     } else {
                         throw ParserNotValidException(strForException);
                     }
@@ -451,13 +443,10 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     if (block.domainRedirect.empty()) {
                         block.domainRedirect = str;
-                        //std::cout << "DOMAIN REDIRECT: " << block.domainRedirect << "\n";
                     } else if (!str.compare("redirect")) {
                         block.redirectIsTemp = true;
-                        //std::cout << "Domain redirect is temp\n";
                     } else if (!str.compare("permanent")) {
                         block.redirectIsTemp = false;
-                        //std::cout << "Domain redirect is perm\n";
                     } else
                         throw ParserNotValidException(strForException);
 
@@ -470,13 +459,10 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     if (loc.redirect.empty()) {
                         loc.redirect = str;
-                        //std::cout << "LOCATION REDIRECT: " << loc.redirect << "\n";
                     } else if (!str.compare("redirect")) {
                         loc.redirectIsTemp = true;
-                        //std::cout << "Loc redirect is temp\n";
                     } else if (!str.compare("permanent")) {
                         loc.redirectIsTemp = false;
-                        //std::cout << "Loc redirect is perm\n";
                     } else
                         throw ParserNotValidException(strForException);
                     break;
@@ -592,8 +578,6 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                     request = "/";
                                 }
                                 directory = out;
-//                                request = "/";
-                                //std::cout << "NOW SEARCH FOR: " << out << "\n";
                                 break ;
                             }
                             else if (request[dirSize] == '/') {
@@ -607,22 +591,15 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                                 }
                                 locMethod = &loc;
                                 maxSize = loc.client_max_body_size;
-//                                std::string tmp = request.substr(dirSize, request.size() - dirSize);
-//                                request = tmp;
                                 std::string tmp = request.substr(0,dirSize);
                                 if (hasEnding(loc.root, tmp)) {
-                                    out = loc.root.substr(0,loc.root.find(tmp)); //TODO : Возможно не работает
+                                    out = loc.root.substr(0,loc.root.find(tmp));
                                 }
                                 else {
                                     out = loc.root;
                                     request = request.substr(dirSize, request.size() - dirSize);
-                                    //TODO: Проверка на PUT
-//                                    request = request.substr(dirSize, request.size() - dirSize);
-//                                    out = loc.root + request;
                                 }
-//                                out = loc.root + tmp;
                                 directory = out;
-                                //std::cout << "NOW SEARCH FOR: " << out << "\n";
                                 break ;
                             }
                         }
@@ -670,20 +647,10 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         code = 404;
                         return (block.getErrorPage(code));
                     }
-//                    isErrorPage = false;
-//                    code = 200;
-                    //return (out);
-                    return (outPlusRequest); //TODO: tut
+                    return (outPlusRequest);
                 }
 
                 if (S_ISDIR(statbuf.st_mode) && cgi.empty() && requestType != 4) {
-                    // TODO :  Проверка на / в конце 404
-//                    if (request[request.size() - 1] != '/') {
-//                        code = 404;
-//                        isErrorPage = true;
-//                        return (block.getErrorPage(code));
-//                    }
-                    // TODO :  Проверка на / в конце 404
                     if (request[request.size() - 1] != '/')
                         request.push_back('/');
                     for (size_t k = 0; k < loc.index.size(); ++k) {
@@ -718,7 +685,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         }
                     } else {
                         //code = 403;
-                        code = 404; // TODO: 404 set for school tester. Should be 403 in fact.
+                        code = 404; // MARK: 404 set for school tester. Should be 403 in fact.
                         isErrorPage = true;
                         return (block.getErrorPage(code));
                     }
@@ -767,7 +734,7 @@ std::string Parser::getfilename(std::string server_name, int port, std::string r
                         code = 200;
                         isErrorPage = false;
                         return (IndexHtmlMaker::makeIndexFile(block.root,
-                                                              request)); //TODO: Возможно заменить на directory
+                                                              request));
                     } catch (...) {
                         isErrorPage = true;
                         code = 505;

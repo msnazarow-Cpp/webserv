@@ -84,8 +84,6 @@ void Server::refillSets()
     }
     for (std::vector<Port *>::iterator it = allports.begin(); it != allports.end(); ++it)
         FD_SET((*it)->getDescriptor(), &read_current);
-    //std::cout << "SET REFILLED\n";
-    //std::cout << "Ports = " << portsCount() << " | Clients = " << clientsCount() << " | Files = " << filesCount() << " | max = " << getLastSock() <<"\n";
 }
 
 int Server::getLastSock()
@@ -117,7 +115,7 @@ int Server::getLastSock()
 int Server::selector()
 {
     timeout.tv_sec = 5;
-    return (select(getLastSock() + 1, &read_current, &write_current, NULL, &timeout)); //TODO: Если ставить timeout - бесконечный селект - так и задумано, это нужно, чтобы можно было освобождать зависшие запросы
+    return (select(getLastSock() + 1, &read_current, &write_current, NULL, &timeout));
 }
 
 void Server::addPort(Port *port)
@@ -282,7 +280,7 @@ void Server::sendAnswer()
     while (itC != allclients.end())
     {
         descr = (*itC)->getDescriptor();
-        if (isSetWrite(descr)) //TODO Не write при редиректе , при POST (get kartinko) - тут все норм
+        if (isSetWrite(descr))
         {
             (*itC)->setTimer();
             if ((*itC)->getStatus() == 4)

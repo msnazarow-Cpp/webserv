@@ -2,7 +2,6 @@
 
 Client::Client(Port *_port, std::map<std::string, std::string> *_contentType): cgi(""), port(_port), fileWrite(0), fileRead(0), s_block(0), contentType(_contentType)
 {
-    //std::cout << "CLIENT TO PORT " << port->getDescriptor() << "\n";
     sockaddr_in addr;
     int addrLen = sizeof(addr);
     descriptor = accept(port->getDescriptor(), (sockaddr *) &addr, (socklen_t *)&addrLen);
@@ -37,7 +36,6 @@ Client::~Client()
     
 void Client::reset(bool val)
 {
-    //std::cout << "COMPLETE RESET of " << descriptor << "\n";
     requestBody.clear();
     response.clear();
     path.str("");
@@ -213,8 +211,6 @@ bool Client::parseHeader(Parser *parser)
 {
     size_t pos;
     size_t pos2;
-    //std::cout << "PARSE HEADER\n";
-    //std::cout << "PARSE HEADER\nREQUEST:\n" << buffer->getBuffer().substr(0, 1500) << "\nEND\n";
     if (requestType == 1 || requestType == 4)
         pos = 4;
     else if (requestType == 2)
@@ -279,9 +275,7 @@ bool Client::parseHeader(Parser *parser)
             code = 400;
             return (handleErrorPage());
         }
-
         streamPort << buffer->getBuffer().substr(pos, pos2 - pos);
-
         streamPort >> requestPort;
     }
     else if (pos3 != std::string::npos)
@@ -304,24 +298,17 @@ bool Client::parseHeader(Parser *parser)
     pos = buffer->getBuffer().find("Connection: ", pos2);
     if (pos == std::string::npos)
         keepAlive = true;
-    else
-    {
+    else {
         pos += 12;
         pos2 = buffer->getBuffer().find("\r\n", pos);
-        if (pos2 == std::string::npos)
-        {
+        if (pos2 == std::string::npos) {
             keepAlive = true;
             envs["HTTP_CONNECTION"] = "keep-alive";
-        }
-        else
-        {
-            if ((!buffer->getBuffer().compare(pos, pos2 - pos, "close")))
-            {
+        } else {
+            if ((!buffer->getBuffer().compare(pos, pos2 - pos, "close"))) {
                 keepAlive = false;
                 envs["HTTP_CONNECTION"] = "close";
-            }
-            else
-            {
+            } else {
                 keepAlive = true;
                 envs["HTTP_CONNECTION"] = "keep-alive";
             }
@@ -343,12 +330,9 @@ bool Client::parseHeader(Parser *parser)
         std::string tmp = target.substr(i - 1, target.size() + 1 - i);
         target = tmp;
     }
-    //TODO: Debug - delete before release
-    std::string fileName = parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked, 0);
-    path << fileName;
-    if (code == 301 || code == 302)
-    {
-        formRedirect(path.str() + target); //TODO: Add plus target - теперь не очень работают редиректы из локейшенов
+    path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked, 0);
+    if (code == 301 || code == 302) {
+        formRedirect(path.str());
         path.str("");
         return (false);
     }
@@ -357,31 +341,25 @@ bool Client::parseHeader(Parser *parser)
         return (handleErrorPage());
 
     pos = buffer->getBuffer().find("\r\n\r\n", pos2);
-    if (pos == std::string::npos)
-    {
+    if (pos == std::string::npos) {
         code = 400;
         return (handleErrorPage());
     }
 
-    if (requestType == 3)
-    {
-        if (!rmdir(path.str().c_str()) || !remove(path.str().c_str()))
-        {
+    if (requestType == 3) {
+        if (!rmdir(path.str().c_str()) || !remove(path.str().c_str())) {
             resetBuffer();
             buffer->fillContent("<h1>File " + target + " deleted successfully</h1>");
             code = 200;
             status = 2;
             formAnswer();
             return (false);
-        }
-        else
-        {
+        } else {
             code = 404;
             return (handleErrorPage());
         }
     }
-    else if (requestType == 2 && !requestBodySize && !requestIsChunked && envs["QUERY_STRING"].empty())
-    {
+    else if (requestType == 2 && !requestBodySize && !requestIsChunked && envs["QUERY_STRING"].empty()) {
         code = 204;
         return (handleErrorPage());
     }
@@ -392,17 +370,12 @@ bool Client::parseHeader(Parser *parser)
     while ((pos3 = headerTmp.find("\r\n", pos2)) != std::string::npos)
     {
         pos = headerTmp.find(": ", pos2);
-        if (pos == std::string::npos)
-        {
+        if (pos == std::string::npos) {
             code = 400;
             return (handleErrorPage());
         }
         std::string t1 = "HTTP_" + headerTmp.substr(pos2, pos - pos2);
         std::string t2 = headerTmp.substr(pos + 2, pos3 - pos - 2);
-        /*std::transform(t1.begin(), t1.end(), t1.begin(), ::toupper);
-        size_t pos4 = t1.find("-");
-        if (pos4 != std::string::npos)
-            t1[pos4] = '_';*/
         envs[t1] = headerTmp.substr(pos + 2, pos3 - pos - 2);
         pos2 = pos3 + 2;
     }
@@ -429,19 +402,15 @@ bool Client::parseHeader(Parser *parser)
     envs["HTTP_ROOT"] = s_block->getRoot();
     envs["BUFFER_IS_ROOT"] = s_block->getIsBufferRoot();
     envs["UPLOADS_IS_ROOT"] = s_block->getIsUploadsRoot();
-    //std::cout << "PATH INFO: " << envs["PATH_INFO"] << "\n";
 
     //BODY
-    if (getLen() && !cgi.empty() && !requestIsChunked)
-    {
-        if (maxSize > -1 && maxSize < requestBodySize)
-        {
+    if (getLen() && !cgi.empty() && !requestIsChunked) {
+        if (maxSize > -1 && maxSize < requestBodySize) {
             code = 413;
             return (handleErrorPage());
         }
         pos2 = buffer->getBuffer().find("\r\n\r\n");
-        if (pos2 == std::string::npos)
-        {
+        if (pos2 == std::string::npos) {
             code = 400;
             return (handleErrorPage());
         }
@@ -449,7 +418,7 @@ bool Client::parseHeader(Parser *parser)
         requestBody = buffer->getBuffer().substr(pos2, getLen());
         resetBuffer();
 
-        try{
+        try {
             std::stringstream filename;
             filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor;
             requestBuffer = filename.str();
@@ -463,9 +432,8 @@ bool Client::parseHeader(Parser *parser)
             setStatus(3);
             filename.str("");
             return (false);
-        } catch (Exception &e){
+        } catch (Exception &e) {
             code = 500;
-            //test500(1);
             return (handleErrorPage());
         }
     }
@@ -495,7 +463,6 @@ bool Client::parseHeader(Parser *parser)
         {
             code = 500;
             chunks.str("");
-            //test500(2);
             return (handleErrorPage());
         }
         else if (maxSize > -1 && chunkSize > maxSize)
@@ -537,13 +504,12 @@ bool Client::parseHeader(Parser *parser)
 
         } catch (Exception &e){
             code = 500;
-            //test500(3);
             return (handleErrorPage());
         }
     }
     else if (!envs["QUERY_STRING"].empty() && !cgi.empty())
     {
-        try{
+        try {
             std::stringstream filename;
             fileWrite = 0;
             filename << s_block->getBuffer() << "/." << port->getDescriptor() << "_" << descriptor << "_read";
@@ -554,22 +520,20 @@ bool Client::parseHeader(Parser *parser)
             setStatus(3);
             filename.str("");
             resetBuffer();
-        } catch (Exception &e){
+        } catch (Exception &e) {
             code = 500;
-            //test500(4);
             return (handleErrorPage());
         }
         return (false);
     }
 
-    try{
+    try {
         fileRead = new FileUpload(path.str(), 0, "", this, true);//, false);
         fileRead->setStatus(2);
         status = 6;
         resetBuffer();
-    }catch(Exception &e){
+    } catch(Exception &e) {
         code = 500;
-        //test500(5);
         return (handleErrorPage());
     }
     return (false);
@@ -589,52 +553,39 @@ void Client::cgiResponseSimple()
 {
     int enter;
 
-    if (!requestIsChunked)
-    {
+    if (!requestIsChunked) {
         enter = open(".enter", O_RDWR | O_CREAT, S_IRWXG | S_IRWXU | S_IRWXO);
-        if (enter < 0)
-        {
+        if (enter < 0) {
             code = 500;
-            //test500(6);
+            handleErrorPage();
+            return ;
+        }
+    } else {
+        if (!fileWrite || !fileWrite->resetDescriptor()) {
+            code = 500;
             handleErrorPage();
             return ;
         }
     }
-    else
-    {
-        if (!fileWrite || !fileWrite->resetDescriptor())
-        {
-            code = 500;
-            //test500(7);
-            handleErrorPage();
-            return ;
-        }
-    }
-    //std::cout << "CGI is " << cgi << "\n";
     std::vector<std::string> args_cpp;
     args_cpp.push_back(cgi);
     args_cpp.push_back(path.str());
     const char * args[3] = {args_cpp[0].c_str(), args_cpp[1].c_str(), NULL};
     int result = 0;
     struct stat cgi_checker;
-    if (stat(cgi.c_str(), &cgi_checker) || S_ISDIR(cgi_checker.st_mode) || !(cgi_checker.st_mode & S_IEXEC))
-    {
+    if (stat(cgi.c_str(), &cgi_checker) || S_ISDIR(cgi_checker.st_mode) || !(cgi_checker.st_mode & S_IEXEC)) {
         code = 500;
-        //test500(8);
         handleErrorPage();
         return ;
     }
 
     pid_t pid = fork();
-    if (pid < 0)
-    {
+    if (pid < 0) {
         code = 500;
-        //test500(8);
         handleErrorPage();
         return ;
     }
-    if (pid == 0)
-    {
+    if (pid == 0) {
         dup2(fileRead->getDescriptor(), 1);
         dup2(fileRead->getDescriptor(), 2);
         if (!requestIsChunked)
@@ -642,20 +593,12 @@ void Client::cgiResponseSimple()
         else
             dup2(fileWrite->getDescriptor(), 0);
         exit(execve(cgi.c_str(), (char* const *)args, cgiEnvCreate()));
-    }
-    else
-    {
+    } else {
         waitpid(pid, &result, 0);
         if (!requestIsChunked)
             close(enter);
         bool ret = fileRead->resetDescriptor();
-   /*     if ((result || !ret) && fileWrite)
-        {
-            fileRead->setStatus(-2);
-            return ;
-        }
-        else */if ((result || !ret))// && !fileWrite)
-        {
+        if (result || !ret) {
             code = 500;
             handleErrorPage();
             return ;
@@ -667,23 +610,17 @@ void Client::cgiResponseSimple()
 
 void Client::fillContentType()
 {
-    /*if (ends_with(target, ".png"))
-        buffer->fillBuffer("Content-Type: image/png\r\n");
-    else if (ends_with(target, ".jpeg") || ends_with(target, ".jpg"))
-        buffer->fillBuffer("Content-Type: image/jpeg\r\n");*/
     size_t pos, posRes = 0;
     while ((pos = target.find(".", posRes)) != std::string::npos)
         posRes = pos + 1;
-    if (!posRes)
-    {
+    if (!posRes) {
         buffer->fillBuffer("Content-Type: text/html\r\n");
         return ;
     }
     posRes--;
     std::string ending(target.substr(posRes, target.size() - posRes));
     std::map<std::string, std::string>::iterator it = contentType->find(ending);
-    if (it != contentType->end())
-    {
+    if (it != contentType->end()) {
         buffer->fillBuffer("Content-Type: " + (*it).second + "\r\n");
         return ;
     }
