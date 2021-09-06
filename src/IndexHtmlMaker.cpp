@@ -24,7 +24,7 @@ std::string IndexHtmlMaker::makeIndexFile(std::string rootDirectory, std::string
         }
     }
     std::string bufDirectory = rootDirectory + requestDirectory;
-    std::ofstream file(bufDirectory + ".html");
+    std::ofstream file((bufDirectory + ".html").c_str());
     file.setf(std::ios::left);
 
     if (!(file << " <html>\n<head><title>Index of " << requestDirectory << "</title></head>\n<body bgcolor=\"white\">\n"))
