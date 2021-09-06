@@ -11,14 +11,26 @@
 #include <cstdlib>
 #include <cstring>
 #include "Location.hpp"
-
-class Server;
-class ServerBlock;
+#include "Server.hpp"
+#include "ServerBlock.hpp"
 class Parser {
 private:
     std::vector<ServerBlock> blocks;
 public:
-    class ParserNotValidException:std::exception{};
+    class ParserNotValidException:std::exception {
+        std::string _message;
+    public:
+        ParserNotValidException() {
+        }
+        ParserNotValidException(std::string message) {
+            this->_message = message;
+        }
+        virtual const char* what() const throw() {
+            return (_message.c_str());
+        }
+        virtual ~ParserNotValidException() throw() {
+        };
+    };
     class NoValidServerBlockExeption:std::exception{};
 //    class ParserNotValidException:std::exception{};
 //    class ParserNotValidException:std::exception{};
@@ -29,9 +41,6 @@ public:
     std::string getfilename(std::string server_name, int port, std::string request, bool &isErrorPage, std::string &cgi, bool &isLegit, int requestType, int &code, int &maxSize, std::string directory, bool chunked, Location *locMethod);
     size_t getBlocksCount();
     void checkAcceptedMethod(std::set<Method> &methods, int requestType, bool &isLegit, int &code);
+    const std::vector<ServerBlock> &getBlocks();
 };
-
-
-#include "Server.hpp"
-#include "ServerBlock.hpp"
 #endif //C_SOCKET_SERVER_GROUP__PARSER_HPP

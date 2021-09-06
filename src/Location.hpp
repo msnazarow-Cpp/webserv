@@ -13,16 +13,16 @@ enum Method{
     DELETE,
     PUT
 };
-enum boolPlusNil{
-    True = true,
-    False = false,
+enum BoolPlusNil{
+    False,
+    True,
     nil
 };
 struct Location{
     std::vector<std::string> location;
     std::string root;
     std::vector<std::string> index;
-    boolPlusNil autoindex;
+    BoolPlusNil autoindex;
     size_t client_max_body_size;
     std::string fastcgi_pass;
     std::string fastcgi_params;
@@ -35,5 +35,5 @@ struct Location{
     Location(): location(), root(), index(), autoindex(nil), client_max_body_size(-1), fastcgi_pass(), fastcgi_params(), redirect(""){}
 };
 std::ostream& operator<<(std::ostream &os, const Location& d);
-
+std::ostream& operator<<(std::ostream& out, const BoolPlusNil value);
 #endif //C_SOCKET_SERVER_GROUP__LOCATION_HPP

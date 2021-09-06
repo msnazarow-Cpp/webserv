@@ -71,7 +71,7 @@ private:
     size_t client_max_body_size;
     std::vector<std::string>index;
     std::string bufferDir;
-    boolPlusNil autoindex;
+    BoolPlusNil autoindex;
     friend bool operator ==(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator !=(const ServerBlock& lhs, const ServerBlock& rhs);
     friend bool operator <(const ServerBlock& lhs, const ServerBlock& rhs);

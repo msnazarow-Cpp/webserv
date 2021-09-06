@@ -48,11 +48,15 @@ int main (int argc, char *argv[])
     Parser *parser;
     try {
         parser = new Parser(arg, server);
+        const std::vector<ServerBlock> &blocks = parser->getBlocks();
+        for (size_t i = 0; i < blocks.size(); i++) {
+            std::cout << GREEN << blocks[i] << DEFAULT << std::endl;
+        }
     } catch (Parser::NoValidServerBlockExeption &e) {
-        std::cout << RED << "Exception during config parsing: No valid server block\nPlease correct or use another config." << DEFAULT << std::endl;
+        std::cout << RED << "Exception: Each server block in config is not valid\nPlease correct or use another config." << DEFAULT << std::endl;
         exit (1);
     }catch (Parser::ParserNotValidException &e) {
-        std::cout << "Exception during config parsing. Server stopped." << std::endl;
+        std::cout << RED << "Exception: Config not valid: " << std::endl << e.what() << DEFAULT << std::endl;
         exit (1);
     }
 

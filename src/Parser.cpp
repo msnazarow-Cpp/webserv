@@ -37,6 +37,12 @@ bool Parser::check_block(ServerBlock &block) {
             throw ParserNotValidException();
         }
     }
+    if (block.uploads_directory.empty()) {
+        block.uploads_directory = UPLOAD_DEFAULT_DIR;
+    }
+    if (block.bufferDir.empty()) {
+        block.bufferDir = BUFFER_DEFAULT_DIR;
+    }
     return false;
 }
 
@@ -44,7 +50,7 @@ Parser::Parser(char *confFileName, Server *server) {
     std::fstream file(confFileName);
     std::stringstream lines;
     std::string str;
-    ServerBlock tmp;
+    ServerBlock block;
     size_t ret;
     Location loc;
     if (file.fail()){
@@ -57,21 +63,22 @@ Parser::Parser(char *confFileName, Server *server) {
             continue;
         std::stringstream ss;
         ss << str;
+        std::string strForException = str;
         while (ss >> str){
             if (str.substr(0, 1) == "#")
                 break;
-            switch (tmp.status) {
+            switch (block.status) {
                 case clean : {
                     if (str == "server") {
-                        tmp.status = waitForServer;
+                        block.status = waitForServer;
                     } else {
-                        throw ParserNotValidException();
+                        throw ParserNotValidException(strForException);
                     }
                     break;
                 }
                 case waitForServer : {
                     if (str == "{"){
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -79,7 +86,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 }
                 case waitForLocation : {
                     if (str == "{"){
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                     } else {
                         loc.location.push_back(str);
                     }
@@ -87,63 +94,63 @@ Parser::Parser(char *confFileName, Server *server) {
                 }
                 case waitForServerParams : {
                     if (str == "}") {
-                        tmp.status = clean;
+                        block.status = clean;
                         try {
-                            check_block(tmp);
+                            check_block(block);
                         } catch (...) {
-                            std::cout <<"Exluded: " << tmp << std::endl;
+                            std::cout << "Exluded: " << block << std::endl;
                             continue;
                         }
-                        if (tmp.domainRedirect.empty()) {
-                            if (tmp.createDirs()) {
-                                if (tmp.server_name.empty())
-                                    tmp.server_name.insert(IP);
-                                blocks.push_back(tmp);
+                        if (block.domainRedirect.empty()) {
+                            if (block.createDirs()) {
+                                if (block.server_name.empty())
+                                    block.server_name.insert(IP);
+                                blocks.push_back(block);
                                 blocks.back().fillPorts(server);
                                 //TODO: try files check
-//                                if (tmp.getTry) {
-//                                    blocks.push_back(tmp);
+//                                if (block.getTry) {
+//                                    blocks.push_back(block);
 //                                    blocks.back().fillPorts(server);
 //                                } else
-//                                    std::cout << "Block " << tmp
+//                                    std::cout << "Block " << block
 //                                              << "has been excluded from set because of error (no try files block)\n";
                             } else
-                                std::cout << YELLOW << tmp << RED << "Error: Can't create uploads or/and .buffer directory" << DEFAULT << std::endl;
+                                std::cout << YELLOW << block << RED << "Error: ServerBlock excluded: Can't create uploads or/and .buffer directory" << DEFAULT << std::endl;
                         }
                         else
                         {
-                            if (tmp.server_name.empty())
-                                tmp.server_name.insert(IP);
-                            blocks.push_back(tmp);
+                            if (block.server_name.empty())
+                                block.server_name.insert(IP);
+                            blocks.push_back(block);
                             blocks.back().fillPorts(server);
                         }
-                        tmp = ServerBlock();
+                        block = ServerBlock();
                     } else if (str == "listen") {
-                        tmp.status = waitForListen;
+                        block.status = waitForListen;
                     } else if (str == "server_name") {
-                        tmp.status = waitForServerName;
+                        block.status = waitForServerName;
                     } else if (str == "root"){
-                        tmp.status = waitForServerRoot;
+                        block.status = waitForServerRoot;
                     } else if (str == "index") {
-                        tmp.status = waitForServerIndex;
+                        block.status = waitForServerIndex;
                     } else if (str == "location"){
-                        tmp.status = waitForLocation;
+                        block.status = waitForLocation;
                     } else if (str == "error_page"){
-                        tmp.status = waitForErrorPageNumber;
+                        block.status = waitForErrorPageNumber;
                     } else if (str == "client_max_body_size"){
-                        tmp.status = waitForRootClientMaxBodySize;
+                        block.status = waitForRootClientMaxBodySize;
                     } else if (str == "autoindex"){
-                        tmp.status = waitForRootAutoIndex;
+                        block.status = waitForRootAutoIndex;
                     } else if (str == "method"){
-                        tmp.status = waitForRootMethod;
+                        block.status = waitForRootMethod;
                     } else if (str == "try_files"){
-                        tmp.status = waitForServerTryFiles;
+                        block.status = waitForServerTryFiles;
                     } else if (str == "uploads_directory"){
-                        tmp.status = waitForUploadsDirectory;
+                        block.status = waitForUploadsDirectory;
                     } else if (str == "buffer_directory"){
-                        tmp.status = waitForBufferDirectory;
+                        block.status = waitForBufferDirectory;
                     } else if (str == "rewrite"){
-                        tmp.status = waitForDomainRedirect;
+                        block.status = waitForDomainRedirect;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -151,26 +158,26 @@ Parser::Parser(char *confFileName, Server *server) {
                 }
                 case waitForLocationParams : {
                     if (str == "}") {
-                        tmp.status = waitForServerParams;
-                        tmp.locations.push_back(loc);
+                        block.status = waitForServerParams;
+                        block.locations.push_back(loc);
                         loc = Location();
                     } else if (str == "root"){
-                        tmp.status = waitForLocationRoot;
+                        block.status = waitForLocationRoot;
                     } else if (str == "index"){
-                        tmp.status = waitForLocationIndex;
+                        block.status = waitForLocationIndex;
                     } else if (str == "method"){
-                        tmp.status = waitForLocationMethod;
+                        block.status = waitForLocationMethod;
                     } else if (str == "autoindex"){
-                        tmp.status = waitForLocationAutoIndex;
+                        block.status = waitForLocationAutoIndex;
                     } else if (str == "cgi_pass") {
-                        tmp.status = waitForCgi;
+                        block.status = waitForCgi;
                     } else if (str == "client_max_body_size"){
-                        tmp.status = waitForLocationClientMaxBodySize;
+                        block.status = waitForLocationClientMaxBodySize;
                     } else if (str == "try_files"){
-                        tmp.status = waitForLocationTryFiles;
-                        tmp.getTry = true;
+                        block.status = waitForLocationTryFiles;
+                        block.getTry = true;
                     } else if (str == "rewrite"){
-                        tmp.status = waitForLocationRedirect;
+                        block.status = waitForLocationRedirect;
                     } else {
                         throw ParserNotValidException();
                     }
@@ -179,13 +186,13 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForListen : {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
                     char *check;
                     ret = strtol(str.c_str(), &check, 10);
                     if (check == str.c_str() + str.size()) //TODO: try to setup the same port multiple times
-                        tmp.listen.insert(ret);
+                        block.listen.insert(ret);
                     else{
                         throw ParserNotValidException();
                     }
@@ -194,23 +201,23 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForServerName : {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
-                        tmp.server_name.insert(str.substr(0,str.size() - 1));
+                        block.status = waitForServerParams;
+                        block.server_name.insert(str.substr(0, str.size() - 1));
                     } else {
-                        tmp.server_name.insert(str);
+                        block.server_name.insert(str);
                     }
                     break;
                 }
                 case waitForServerRoot : {
-                    if (!tmp.root.empty())
+                    if (!block.root.empty())
                         throw ParserNotValidException();
                     else {
                         if (str[str.size() - 1] == ';')
                         {
-                            tmp.status = waitForServerParams;
-                            tmp.root = str.substr(0,str.size() - 1);
+                            block.status = waitForServerParams;
+                            block.root = str.substr(0, str.size() - 1);
                         } else {
-                            tmp.root = str;
+                            block.root = str;
                         }
                     }
                     break;
@@ -220,7 +227,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         throw ParserNotValidException();
                     else {
                         if (str[str.size() - 1] == ';'){
-                            tmp.status = waitForLocationParams;
+                            block.status = waitForLocationParams;
                             loc.root = str.substr(0,str.size() - 1);
                         } else {
                             loc.root = str;
@@ -231,16 +238,16 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForServerIndex : {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
-                    tmp.index.push_back(str);
+                    block.index.push_back(str);
                     break;
                 }
                 case waitForLocationIndex : {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     loc.index.push_back(str);
@@ -249,7 +256,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForLocationMethod : {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     if (str == "GET"){
@@ -272,20 +279,20 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForRootMethod : {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
                     if (str == "GET"){
-                        tmp.methods.insert(GET);
+                        block.methods.insert(GET);
                         //std::cout << "GET INSERTED\n";
                     }else if (str == "POST") {
-                        tmp.methods.insert(POST);
+                        block.methods.insert(POST);
                         //std::cout << "POST INSERTED\n";
                     } else if (str == "DELETE") {
-                        tmp.methods.insert(DELETE);
+                        block.methods.insert(DELETE);
                         //std::cout << "DELETE INSERTED\n";
                     } else if (str == "PUT") {
-                        tmp.methods.insert(PUT);
+                        block.methods.insert(PUT);
                         //std::cout << "DELETE INSERTED\n";
                     } else {
                         throw ParserNotValidException();
@@ -295,13 +302,13 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForLocationAutoIndex: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     if ( str == "on" ){
-                        loc.autoindex = static_cast<boolPlusNil>(true);
+                        loc.autoindex = static_cast<BoolPlusNil>(true);
                     } else if ( str == "off"){
-                        loc.autoindex = static_cast<boolPlusNil>(false);
+                        loc.autoindex = static_cast<BoolPlusNil>(false);
                     } else {
                         throw ParserNotValidException();
                     }
@@ -310,13 +317,13 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForRootAutoIndex: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
                     if ( str == "on" ){
-                        tmp.autoindex = static_cast<boolPlusNil>(true);
+                        block.autoindex = static_cast<BoolPlusNil>(true);
                     } else if ( str == "off"){
-                        tmp.autoindex = static_cast<boolPlusNil>(false);
+                        block.autoindex = static_cast<BoolPlusNil>(false);
                     } else {
                         throw ParserNotValidException();
                     }
@@ -325,7 +332,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForCgi: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     loc.cgi_pass = str;
@@ -334,7 +341,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForLocationClientMaxBodySize: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     char *check;
@@ -349,13 +356,13 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForRootClientMaxBodySize: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
                     char *check;
                     ret = strtol(str.c_str(), &check, 10);
                     if (check == str.c_str() + str.size())
-                        tmp.client_max_body_size = ret;
+                        block.client_max_body_size = ret;
                     else{
                         throw ParserNotValidException();
                     }
@@ -365,8 +372,8 @@ Parser::Parser(char *confFileName, Server *server) {
                     char *check;
                     ret = strtol(str.c_str(), &check, 10);
                     if (check == str.c_str() + str.size()) {
-                        tmp.error_page[ret];
-                        tmp.status = waitForErrorPage;
+                        block.error_page[ret];
+                        block.status = waitForErrorPage;
                     } else{
                         throw ParserNotValidException();
                     }
@@ -375,62 +382,67 @@ Parser::Parser(char *confFileName, Server *server) {
                 case waitForErrorPage: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
-                    tmp.error_page[ret] = str;
+                    block.error_page[ret] = str;
                     break;
                 }
                 case waitForServerTryFiles: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
-                    tmp.try_files.push_back(str);
+                    block.try_files.push_back(str);
                     break;
                 }
                 case waitForLocationTryFiles: {
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     loc.try_files.push_back(str);
                     break;
                 }
                 case waitForUploadsDirectory: {
+                    if (!block.uploads_directory.empty()) {
+                        throw ParserNotValidException(strForException);
+                    }
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
-                    tmp.uploads_directory = str;
+                    block.uploads_directory = str;
                     break;
                 }
                 case waitForBufferDirectory: {
+                    if (!block.bufferDir.empty()) {
+                        throw ParserNotValidException(strForException);
+                    }
                     if (str[str.size() - 1] == ';')
                     {
-                        tmp.status = waitForServerParams;
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
-                    tmp.bufferDir = str;
+                    block.bufferDir = str;
                     break;
                 }
                 case waitForDomainRedirect: {
-                    if (str[str.size() - 1] == ';')
-                    {
-                        tmp.status = waitForServerParams;
+                    if (str[str.size() - 1] == ';') {
+                        block.status = waitForServerParams;
                         str.erase(str.end() - 1);
                     }
-                    if (tmp.domainRedirect.empty()) {
-                        tmp.domainRedirect = str;
-                        //std::cout << "DOMAIN REDIRECT: " << tmp.domainRedirect << "\n";
+                    if (block.domainRedirect.empty()) {
+                        block.domainRedirect = str;
+                        //std::cout << "DOMAIN REDIRECT: " << block.domainRedirect << "\n";
                     } else if (!str.compare("redirect")) {
-                        tmp.redirectIsTemp = true;
+                        block.redirectIsTemp = true;
                         //std::cout << "Domain redirect is temp\n";
                     } else if (!str.compare("permanent")) {
-                        tmp.redirectIsTemp = false;
+                        block.redirectIsTemp = false;
                         //std::cout << "Domain redirect is perm\n";
                     } else
                         throw ParserNotValidException();
@@ -439,7 +451,7 @@ Parser::Parser(char *confFileName, Server *server) {
                 }
                 case waitForLocationRedirect: {
                     if (str[str.size() - 1] == ';') {
-                        tmp.status = waitForLocationParams;
+                        block.status = waitForLocationParams;
                         str.erase(str.end() - 1);
                     }
                     if (loc.redirect.empty()) {
@@ -458,10 +470,10 @@ Parser::Parser(char *confFileName, Server *server) {
             }
             if (str == ";")
             {
-                if (tmp.status >= 3 && tmp.status <= 5)
-                    tmp.status = waitForServerParams;
-                else if (tmp.status >= 8){
-                    tmp.status = waitForLocationParams;
+                if (block.status >= 3 && block.status <= 5)
+                    block.status = waitForServerParams;
+                else if (block.status >= 8){
+                    block.status = waitForLocationParams;
                 } else {
                     throw ParserNotValidException();
                 }
@@ -800,4 +812,8 @@ size_t Parser::getBlocksCount()
 Parser::~Parser()
 {
     blocks.clear();
+}
+
+const std::vector<ServerBlock> &Parser::getBlocks() {
+    return blocks;
 }

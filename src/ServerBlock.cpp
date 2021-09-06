@@ -113,11 +113,11 @@ ServerBlock::ServerBlock()
         listen(),
         error_page(),
         root(),
-        uploads_directory(UPLOAD_DEFAULT_DIR),
+        uploads_directory(),
         locations(),
         client_max_body_size(-1),
         index(),
-        bufferDir(BUFFER_DEFAULT_DIR),
+        bufferDir(),
         autoindex(),
         getTry(false),
         domainRedirect("") {
