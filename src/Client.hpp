@@ -1,20 +1,16 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
-
-#ifndef __APPLE__
-#include <wait.h>
-#endif
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
-
-
 #include <cstdio>
-//#include <ctime>
 #include <iostream>
 #include <sstream>
 #include <vector>
+#ifndef __APPLE__
+    #include <wait.h>
+#endif
 
 #include "Port.hpp"
 #include "File.hpp"

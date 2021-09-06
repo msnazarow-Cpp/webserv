@@ -7,7 +7,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-
+#include "Parser.hpp"
+#include "Port.hpp"
 class Client;
 class FileUpload;
 class Parser;
@@ -50,7 +51,4 @@ public:
     void clearPorts();
 };
 
-#include "Client.hpp"
-#include "Parser.hpp"
-#include "Port.hpp"
 #endif

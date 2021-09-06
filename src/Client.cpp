@@ -350,11 +350,12 @@ bool Client::parseHeader(Parser *parser)
         std::string tmp = target.substr(i - 1, target.size() + 1 - i);
         target = tmp;
     }
-
-    path << parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked, 0);
+    //TODO: Debug - delete before release
+    std::string fileName = parser->getfilename(requestHost, requestPort, target, isErrorPage, cgi, isLegit, requestType, code, maxSize, "", requestIsChunked, 0);
+    path << fileName;
     if (code == 301 || code == 302)
     {
-        formRedirect(path.str());
+        formRedirect(path.str() + target); //TODO: Add plus target
         path.str("");
         return (false);
     }

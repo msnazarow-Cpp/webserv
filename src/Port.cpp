@@ -1,3 +1,4 @@
+#include <csignal>
 #include "Port.hpp"
 
 Port::Port(int port): port(port)

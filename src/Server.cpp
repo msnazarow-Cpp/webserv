@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Client.hpp"
 
 Server::Server()
 {
@@ -278,7 +279,7 @@ void Server::sendAnswer()
     while (itC != allclients.end())
     {
         descr = (*itC)->getDescriptor();
-        if (isSetWrite(descr))
+        if (isSetWrite(descr)) //TODO Не write при редиректе
         {
             (*itC)->setTimer();
             if ((*itC)->getStatus() == 4)
