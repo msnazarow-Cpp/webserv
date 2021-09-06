@@ -5,6 +5,11 @@
 #include "Extention.hpp"
 #include <ostream>
 std::ostream &operator<<(std::ostream &os, const Location &d) {
-    return (os << d.location << " " << d.root << " " << d.index << " " << d.autoindex << " "
-    << d.client_max_body_size << " " << d.fastcgi_pass << " " << d.fastcgi_params << std::endl);
+    return (os <<
+    "\tLocation Request: " << d.location << std::endl <<
+    "\tLocation Root: " << d.root << std::endl <<
+    "\tLocation IndexFiles: " << d.index << std::endl <<
+    "\tLocation AutoIndex: " << d.autoindex << std::endl <<
+    "\tLocation ClientMaxBodySize: " << d.client_max_body_size << std::endl <<
+    "\tLocation CgiPass" << d.cgi_pass << std::endl);
 }

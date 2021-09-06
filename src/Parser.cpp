@@ -108,7 +108,7 @@ Parser::Parser(char *confFileName, Server *server) {
 //                                              << "has been excluded from set because of error (no try files block)\n";
 
                             } else
-                                std::cout << "Block " << tmp << "has been excluded from set because of error\n";
+                                std::cout << "======Block====" <<std::endl << tmp << "has been excluded from set because of error\n";
                         }
                         else
                         {

@@ -30,8 +30,15 @@ bool operator>=(const ServerBlock &lhs, const ServerBlock &rhs) {
 }
 
 std::ostream &operator<<(std::ostream &os, const ServerBlock &d) {
-    return os << d.server_name << " " << d.root << " " << d.error_page << " " <<
-              d.listen << " " << d.client_max_body_size << " " << d.index << std::endl << d.locations << std::endl;}
+    return os <<
+    "Block ServerName: " << d.server_name << std::endl <<
+    "Block Root: " << d.root << std::endl <<
+    "Block Error Pages: " << d.error_page << std::endl <<
+    "Block Ports: " << d.listen << std::endl <<
+    "Block MaxBodySize: " << d.client_max_body_size << std::endl <<
+    "Block Index Files: " << d.index << std::endl <<
+    "Block Locations: " << std::endl << d.locations << std::endl;
+}
 
 bool ServerBlock::createDirs()
 {
