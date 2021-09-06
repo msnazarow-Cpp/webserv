@@ -3,7 +3,7 @@
 
 Server::Server()
 {
-    timeout.tv_sec = 5;
+    timeout.tv_sec = 25;
     timeout.tv_usec = 0;
     fillContentTypes();
 }
@@ -116,6 +116,7 @@ int Server::getLastSock()
 
 int Server::selector()
 {
+    timeout.tv_sec = 5;
     return (select(getLastSock() + 1, &read_current, &write_current, NULL, &timeout)); //TODO: Если ставить timeout - бесконечный селект - так и задумано, это нужно, чтобы можно было освобождать зависшие запросы
 }
 

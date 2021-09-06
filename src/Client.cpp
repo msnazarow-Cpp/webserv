@@ -633,7 +633,7 @@ void Client::cgiResponseSimple()
         handleErrorPage();
         return ;
     }
-    if (!pid)
+    if (pid == 0)
     {
         dup2(fileRead->getDescriptor(), 1);
         dup2(fileRead->getDescriptor(), 2);
@@ -649,12 +649,12 @@ void Client::cgiResponseSimple()
         if (!requestIsChunked)
             close(enter);
         bool ret = fileRead->resetDescriptor();
-        if ((result || !ret) && fileWrite)
+   /*     if ((result || !ret) && fileWrite)
         {
             fileRead->setStatus(-2);
             return ;
         }
-        else if ((result || !ret) && !fileWrite)
+        else */if ((result || !ret))// && !fileWrite)
         {
             code = 500;
             handleErrorPage();
