@@ -12,31 +12,34 @@
 
 class Server;
 enum Status{
+
     clean,
     waitForServer,
     waitForServerParams,
+    waitForLocation,
+    waitForLocationParams,
+    waitForErrorPageNumber,
+
     waitForListen,
     waitForServerName,
     waitForServerIndex,
     waitForServerRoot,
-    waitForLocationIndex,
-    waitForLocationRoot,
-    waitForLocation,
-    waitForLocationParams,
-    waitForLocationMethod,
-    waitForRootMethod,
-    waitForRootAutoIndex,
-    waitForLocationAutoIndex,
-    waitForCgi,
-    waitForRootClientMaxBodySize,
-    waitForLocationClientMaxBodySize,
-    waitForErrorPageNumber,
-    waitForErrorPage,
+    waitForServerMethod,
+    waitForServerAutoIndex,
+    waitForServerClientMaxBodySize,
     waitForServerTryFiles,
-    waitForLocationTryFiles,
+    waitForErrorPage,
     waitForUploadsDirectory,
     waitForBufferDirectory,
     waitForDomainRedirect,
+
+    waitForLocationIndex,
+    waitForLocationRoot,
+    waitForLocationMethod,
+    waitForLocationAutoIndex,
+    waitForCgi,
+    waitForLocationClientMaxBodySize,
+    waitForLocationTryFiles,
     waitForLocationRedirect
 };
 class ServerBlock

@@ -45,7 +45,63 @@ bool Parser::check_block(ServerBlock &block) {
     }
     return false;
 }
-
+void Parser::caseWaitForLocationParams(ServerBlock &block, Location &loc, std::string &str) {
+    if (str == "}") {
+    block.status = waitForServerParams;
+    block.locations.push_back(loc);
+    loc = Location();
+    } else if (str == "root"){
+    block.status = waitForLocationRoot;
+    } else if (str == "index"){
+    block.status = waitForLocationIndex;
+    } else if (str == "method"){
+    block.status = waitForLocationMethod;
+    } else if (str == "autoindex"){
+    block.status = waitForLocationAutoIndex;
+    } else if (str == "cgi_pass") {
+    block.status = waitForCgi;
+    } else if (str == "client_max_body_size"){
+    block.status = waitForLocationClientMaxBodySize;
+    } else if (str == "try_files"){
+    block.status = waitForLocationTryFiles;
+    block.getTry = true;
+    } else if (str == "rewrite"){
+    block.status = waitForLocationRedirect;
+    } else {
+    throw ParserNotValidException();
+    }
+}
+void Parser::caseWaitForServerParams(ServerBlock &block, std::string &str) {
+    if (str == "listen") {
+        block.status = waitForListen;
+    } else if (str == "server_name") {
+        block.status = waitForServerName;
+    } else if (str == "root") {
+        block.status = waitForServerRoot;
+    } else if (str == "index") {
+        block.status = waitForServerIndex;
+    } else if (str == "location") {
+        block.status = waitForLocation;
+    } else if (str == "error_page") {
+        block.status = waitForErrorPageNumber;
+    } else if (str == "client_max_body_size") {
+        block.status = waitForServerClientMaxBodySize;
+    } else if (str == "autoindex") {
+        block.status = waitForServerAutoIndex;
+    } else if (str == "method") {
+        block.status = waitForServerMethod;
+    } else if (str == "try_files") {
+        block.status = waitForServerTryFiles;
+    } else if (str == "uploads_directory") {
+        block.status = waitForUploadsDirectory;
+    } else if (str == "buffer_directory") {
+        block.status = waitForBufferDirectory;
+    } else if (str == "rewrite") {
+        block.status = waitForDomainRedirect;
+    } else {
+        throw ParserNotValidException();
+    }
+}
 Parser::Parser(char *confFileName, Server *server) {
     std::fstream file(confFileName);
     std::stringstream lines;
@@ -57,16 +113,26 @@ Parser::Parser(char *confFileName, Server *server) {
         std::cout << "WARRIES" << std::endl;
         throw ParserNotValidException();
     }
-    while (std::getline(file, str))
-    {
+    while (std::getline(file, str)) {
         if (str.substr(0, 1) == "#")
             continue;
         std::stringstream ss;
         ss << str;
         std::string strForException = str;
-        while (ss >> str){
+        while (ss >> str) {
             if (str.substr(0, 1) == "#")
                 break;
+            if (str == ";")
+            {
+                if (block.status >= waitForListen && block.status <= waitForDomainRedirect)
+                    block.status = waitForServerParams;
+                else if (block.status >= waitForLocationIndex){
+                    block.status = waitForLocationParams;
+                } else {
+                    throw ParserNotValidException();
+                }
+                continue;
+            }
             switch (block.status) {
                 case clean : {
                     if (str == "server") {
@@ -98,7 +164,7 @@ Parser::Parser(char *confFileName, Server *server) {
                         try {
                             check_block(block);
                         } catch (...) {
-                            std::cout << "Exluded: " << block << std::endl;
+                            std::cout << RED << "Exluded: " << block << DEFAULT << std::endl;
                             continue;
                         }
                         if (block.domainRedirect.empty()) {
@@ -107,80 +173,22 @@ Parser::Parser(char *confFileName, Server *server) {
                                     block.server_name.insert(IP);
                                 blocks.push_back(block);
                                 blocks.back().fillPorts(server);
-                                //TODO: try files check
-//                                if (block.getTry) {
-//                                    blocks.push_back(block);
-//                                    blocks.back().fillPorts(server);
-//                                } else
-//                                    std::cout << "Block " << block
-//                                              << "has been excluded from set because of error (no try files block)\n";
                             } else
                                 std::cout << YELLOW << block << RED << "Error: ServerBlock excluded: Can't create uploads or/and .buffer directory" << DEFAULT << std::endl;
-                        }
-                        else
-                        {
+                        } else {
                             if (block.server_name.empty())
                                 block.server_name.insert(IP);
                             blocks.push_back(block);
                             blocks.back().fillPorts(server);
                         }
                         block = ServerBlock();
-                    } else if (str == "listen") {
-                        block.status = waitForListen;
-                    } else if (str == "server_name") {
-                        block.status = waitForServerName;
-                    } else if (str == "root"){
-                        block.status = waitForServerRoot;
-                    } else if (str == "index") {
-                        block.status = waitForServerIndex;
-                    } else if (str == "location"){
-                        block.status = waitForLocation;
-                    } else if (str == "error_page"){
-                        block.status = waitForErrorPageNumber;
-                    } else if (str == "client_max_body_size"){
-                        block.status = waitForRootClientMaxBodySize;
-                    } else if (str == "autoindex"){
-                        block.status = waitForRootAutoIndex;
-                    } else if (str == "method"){
-                        block.status = waitForRootMethod;
-                    } else if (str == "try_files"){
-                        block.status = waitForServerTryFiles;
-                    } else if (str == "uploads_directory"){
-                        block.status = waitForUploadsDirectory;
-                    } else if (str == "buffer_directory"){
-                        block.status = waitForBufferDirectory;
-                    } else if (str == "rewrite"){
-                        block.status = waitForDomainRedirect;
                     } else {
-                        throw ParserNotValidException();
+                        caseWaitForServerParams(block, str);
                     }
                     break;
                 }
                 case waitForLocationParams : {
-                    if (str == "}") {
-                        block.status = waitForServerParams;
-                        block.locations.push_back(loc);
-                        loc = Location();
-                    } else if (str == "root"){
-                        block.status = waitForLocationRoot;
-                    } else if (str == "index"){
-                        block.status = waitForLocationIndex;
-                    } else if (str == "method"){
-                        block.status = waitForLocationMethod;
-                    } else if (str == "autoindex"){
-                        block.status = waitForLocationAutoIndex;
-                    } else if (str == "cgi_pass") {
-                        block.status = waitForCgi;
-                    } else if (str == "client_max_body_size"){
-                        block.status = waitForLocationClientMaxBodySize;
-                    } else if (str == "try_files"){
-                        block.status = waitForLocationTryFiles;
-                        block.getTry = true;
-                    } else if (str == "rewrite"){
-                        block.status = waitForLocationRedirect;
-                    } else {
-                        throw ParserNotValidException();
-                    }
+                    caseWaitForLocationParams(block, loc, str);
                     break;
                 }
                 case waitForListen : {
@@ -276,7 +284,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     break;
                 }
-                case waitForRootMethod : {
+                case waitForServerMethod : {
                     if (str[str.size() - 1] == ';')
                     {
                         block.status = waitForServerParams;
@@ -314,7 +322,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     break;
                 }
-                case waitForRootAutoIndex: {
+                case waitForServerAutoIndex: {
                     if (str[str.size() - 1] == ';')
                     {
                         block.status = waitForServerParams;
@@ -353,7 +361,7 @@ Parser::Parser(char *confFileName, Server *server) {
                     }
                     break;
                 }
-                case waitForRootClientMaxBodySize: {
+                case waitForServerClientMaxBodySize: {
                     if (str[str.size() - 1] == ';')
                     {
                         block.status = waitForServerParams;
@@ -466,16 +474,6 @@ Parser::Parser(char *confFileName, Server *server) {
                     } else
                         throw ParserNotValidException();
                     break;
-                }
-            }
-            if (str == ";")
-            {
-                if (block.status >= 3 && block.status <= 5)
-                    block.status = waitForServerParams;
-                else if (block.status >= 8){
-                    block.status = waitForLocationParams;
-                } else {
-                    throw ParserNotValidException();
                 }
             }
         }

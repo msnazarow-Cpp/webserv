@@ -42,5 +42,7 @@ public:
     size_t getBlocksCount();
     void checkAcceptedMethod(std::set<Method> &methods, int requestType, bool &isLegit, int &code);
     const std::vector<ServerBlock> &getBlocks();
+    void caseWaitForLocationParams(ServerBlock &block, Location &loc, std::string &str);
+    void caseWaitForServerParams(ServerBlock &block, std::string &str);
 };
 #endif //C_SOCKET_SERVER_GROUP__PARSER_HPP
